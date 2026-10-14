@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Navega Livre</title><link rel="stylesheet" href="popup.css"></head>
+<body>
+  <header><span class="logo"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3 27 7v9c0 7-11 13-11 13S5 23 5 16V7Z" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="m10 16 4 4 8-9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></span><div><h1>Navega Livre</h1><p>Menos anúncios. Mais controle.</p></div><span id="version" class="version">0.3.1</span></header>
+  <main>
+    <section class="site-card"><div class="eyebrow">NESTE SITE</div><div class="site-line"><strong id="hostname">Carregando…</strong><span id="status" class="pill">…</span></div><label class="row"><span>Ativar proteção neste site</span><input id="siteEnabled" type="checkbox" class="switch" disabled></label></section>
+    <p id="networkState" class="engine-state" role="status">Verificando o bloqueio de rede…</p>
+    <section class="metrics" aria-label="Atividade nesta página"><div><strong id="hiddenCount">—</strong><span>elementos ocultados</span></div><div><strong id="skipCount">—</strong><span>cliques em pular</span></div></section>
+    <div class="tabs" role="tablist" aria-label="Funções da extensão">
+      <button id="tab-general" role="tab" aria-controls="panel-general" aria-selected="true">Proteção</button>
+      <button id="tab-youtube" role="tab" aria-controls="panel-youtube" aria-selected="false" tabindex="-1">YouTube</button>
+      <button id="tab-repair" role="tab" aria-controls="panel-repair" aria-selected="false" tabindex="-1">Avisos</button>
+    </div>
+    <section id="panel-general" class="settings" role="tabpanel" aria-labelledby="tab-general">
+      <label class="row"><span>Bloqueio geral<small>Publicidade e conexões indesejadas</small></span><input id="enabled" type="checkbox" class="switch"></label>
+      <label class="row"><span>Bloquear rastreadores<small>Lista adicional de análise e rastreamento</small></span><input id="privacy" type="checkbox" class="switch"></label>
+      <label class="row"><span>Ocultar espaços de anúncios<small>Desligue se um elemento do site sumir</small></span><input id="cosmetics" type="checkbox" class="switch"></label>
+    </section>
+    <section id="panel-youtube" class="settings" role="tabpanel" aria-labelledby="tab-youtube" hidden>
+      <label class="row"><span>Ajustes do YouTube<small>Filtrar dados publicitários e espaços de anúncios</small></span><input id="youtube" type="checkbox" class="switch"></label>
+      <label class="row"><span>Pular quando disponível<small>Usar o botão de pular quando ele aparecer</small></span><input id="skipAds" type="checkbox" class="switch"></label>
+      <label class="row"><span>Silenciar anúncios em vídeo<small>Restaurar o áudio depois do anúncio</small></span><input id="muteAds" type="checkbox" class="switch"></label>
+      <p id="youtubeState" class="engine-state player-state" role="status" hidden></p>
+    </section>
+    <section id="panel-repair" class="repair" role="tabpanel" aria-labelledby="tab-repair" hidden>
+      <h2>O site pede para desativar?</h2><p>Tente ocultar um aviso de bloqueador. A compatibilidade depende do site.</p>
+      <button id="repair" class="primary" disabled>Tentar liberar aviso</button>
+      <label class="row compact"><span>Repetir neste site</span><input id="autoRepair" type="checkbox" class="switch" disabled></label>
+    </section>
+    <p id="message" role="status" aria-live="polite">Os contadores são desta página. Recarregue após mudar o bloqueio de rede.</p>
+    <div class="actions"><button id="reload">Recarregar página</button><button id="report">Exportar diagnóstico</button></div>
+  </main>
+  <footer>Processamento local · Sem anúncios próprios<small>Alguns anúncios em vídeo podem permanecer.</small></footer>
+  <script src="filter-info.js"></script><script src="common.js"></script><script src="popup.js"></script>
+</body></html>
