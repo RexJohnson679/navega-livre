@@ -40,6 +40,7 @@ jobs:
           npm run build:firefox
           python3 .github/scripts/check_packages.py
       - name: Preparar ferramentas oficiais de teste
+        id: tools
         run: |
           npm install --prefix "$RUNNER_TEMP/navega-qa" --no-audit --no-fund playwright@1.64.0
           "$RUNNER_TEMP/navega-qa/node_modules/.bin/playwright" install --with-deps chromium
@@ -52,6 +53,7 @@ jobs:
           node extension/tests/browser.e2e.cjs
           node extension/tests/pages.e2e.cjs
       - name: Testar extensão instalada no Firefox
+        if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
         env:
           NAVEGA_EXTENSION_DIR: dist/firefox
         run: |

@@ -123,6 +123,13 @@ const knownFixture = `<!doctype html><html><body>
     await page.goto('https://fixtures.example.test/page?token=fixture-secret#private');
     const tabId = await worker.evaluate(async () => (await chrome.tabs.query({url: 'https://fixtures.example.test/*'}))[0].id);
     const popup = await context.newPage();
+    // A standalone extension tab is itself active. Model only the active-tab
+    // selection of a toolbar popup; tabs.get, messaging, storage and UI remain native.
+    await popup.addInitScript(tabId => {
+      const query = chrome.tabs.query.bind(chrome.tabs);
+      chrome.tabs.query = options => options.active && options.currentWindow
+        ? chrome.tabs.get(tabId).then(tab => [tab]) : query(options);
+    }, tabId);
     await popup.goto('chrome-extension://' + extensionId + '/popup.html');
     await worker.evaluate(tabId => chrome.tabs.update(tabId, {active: true}), tabId);
     await popup.reload();
