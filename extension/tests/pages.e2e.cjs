@@ -3,7 +3,8 @@ const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),asse
 const modules=process.env.NAVEGA_QA_MODULES || process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES;
 const {chromium}=require(modules?modules+'/playwright':'playwright');
 const ext=path.resolve(process.env.NAVEGA_EXTENSION_DIR || path.join(__dirname,'..'));
-const html=fs.readFileSync(path.join(__dirname,'fixtures/sites.html'),'utf8').replaceAll('__PORT__','80');
+const html=fs.readFileSync(path.join(__dirname,'fixtures/sites.html'),'utf8').replaceAll('__PORT__','80')
+  .replace('http://ad.a-ads.com:80','https://ad.a-ads.com');
 const profile=fs.mkdtempSync(path.join(os.tmpdir(),'navega-pages-'));
 (async()=>{
   let context;
@@ -13,6 +14,7 @@ const profile=fs.mkdtempSync(path.join(os.tmpdir(),'navega-pages-'));
     const worker=context.serviceWorkers()[0] || await context.waitForEvent('serviceworker');
     console.log('CHROMIUM',context.browser()?.version());
     await worker.evaluate(async()=>{
+      await queue;
       for(let i=0;i<120;i++){
         if((await chrome.scripting.getRegisteredContentScripts({ids:['navega-popup-main']})).length)return;
         await new Promise(r=>setTimeout(r,25));
@@ -29,6 +31,8 @@ const profile=fs.mkdtempSync(path.join(os.tmpdir(),'navega-pages-'));
     page.on('console',message=>{if(message.type()==='error')console.log('FIXTURE CONSOLE',message.text());});
     const unexpectedDialogs=[];
     page.on('dialog',d=>{unexpectedDialogs.push(d.message());d.dismiss();});
+    // Warm up the renderer after installation, before the actual page scenarios.
+    await page.goto('https://reader.navega.test/frame');
     for(const host of ['reader.navega.test','news.navega.test','video.navega.test']) {
       await page.goto('https://'+host+'/');
       try {
@@ -37,7 +41,14 @@ const profile=fs.mkdtempSync(path.join(os.tmpdir(),'navega-pages-'));
         console.log('GUARD DEBUG',await page.evaluate(()=>({origin:location.origin,guard:typeof window.__navegaLivrePopupState,
           state:typeof window.__navegaLivrePopupState==='function'?window.__navegaLivrePopupState():null,
           policy:typeof window.NavegaPopupPolicy,body:document.body?.textContent?.slice(0,120)})));
-        console.log('REGISTRATION DEBUG',await worker.evaluate(async()=>({config:(await chrome.storage.local.get('config')).config,scripts:await chrome.scripting.getRegisteredContentScripts()})));
+        console.log('REGISTRATION DEBUG',JSON.stringify(await worker.evaluate(async()=>({config:(await chrome.storage.local.get('config')).config,
+          permissions:await chrome.permissions.getAll(),scripts:await chrome.scripting.getRegisteredContentScripts()}))));
+        const sourceId=await worker.evaluate(async()=>(await chrome.tabs.query({url:'https://reader.navega.test/*'}))[0].id);
+        console.log('INJECTION DEBUG',await worker.evaluate(async id=>{
+          try {return await chrome.scripting.executeScript({target:{tabId:id},world:'MAIN',func:()=>({guard:typeof window.__navegaLivrePopupState,
+            hidden:document.querySelector('#banner')?.getAttribute('data-navega-livre-hidden')})});}
+          catch(error){return {error:error.message};}
+        },sourceId));
         throw error;
       }
       await page.waitForFunction(()=>getComputedStyle(document.querySelector('#floating')).display==='none');

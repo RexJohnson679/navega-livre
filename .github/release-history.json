@@ -104,11 +104,11 @@
     "assets": [
       {
         "path": "packages/history/v0.4.0/navega-livre-chromium-v0.4.0.zip",
-        "sha256": "b54ca8b52c2a9fb5a4ba9617f4f7e32185274ae85e46031a1896078d11035926"
+        "sha256": "ee8f4028ae0af1821b943c826695d6ee526e3afd06832484a990873104fefab1"
       },
       {
         "path": "packages/history/v0.4.0/navega-livre-firefox-v0.4.0.zip",
-        "sha256": "59a05c545bc0959610deabfe86b6419ecdc86c2b3b52df7cdc120fe720927523"
+        "sha256": "ce883b829871e0dfee665a26d7dd0a3951452b7561b670a6a0d891cd6510e1a5"
       },
       {
         "path": "packages/history/v0.4.0/LICENSE-MIT.txt",
@@ -116,7 +116,7 @@
       },
       {
         "path": "packages/history/v0.4.0/SHA256SUMS.txt",
-        "sha256": "21f4d1d2ae81b140aca35d62607ccb2dfb8be6818cb4cd9a64a3f9fc7534074d"
+        "sha256": "66c2448d20ef18b4ff19a511b3ce669e89046fad57fc284e51efa11c99800844"
       }
     ]
   }
