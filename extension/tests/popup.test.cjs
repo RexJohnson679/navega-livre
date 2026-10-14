@@ -6,7 +6,7 @@ const vm=require('node:vm');
 const C=require('../common.js');
 const root=path.resolve(__dirname,'..');
 async function fixture(options={}){
-  const nodes=new Map(),requests=[],sent=[];let lastBlob,config=C.normalizeConfig(),network={available:true,enabledRulesets:['advertising','privacy'],error:null};
+  const nodes=new Map(),requests=[],sent=[];let lastBlob,resolveOption,config=C.normalizeConfig(),network={available:true,enabledRulesets:['advertising','privacy'],error:null};
   class Node{
     constructor(){this.events={};this.attributes={};this.checked=false;this.disabled=false;this.hidden=false;this.classes=new Set();this.classList={add:name=>this.classes.add(name),remove:name=>this.classes.delete(name),toggle:(name,on)=>on?this.classes.add(name):this.classes.delete(name)};}
     setAttribute(key,value){this.attributes[key]=value;}
@@ -21,7 +21,7 @@ async function fixture(options={}){
     requests.push(message);
     if(message.type==='GET_CONFIG')return{ok:true,config,network};
     if(message.type==='GET_POPUP_DIAGNOSTIC')return{ok:true,expectedVersion:'0.4.0',registration:{active:true,error:null},main:{installed:true,enabled:true,version:'0.4.0',popupsBlocked:2,linksBlocked:1,dialogsBlocked:1},tabsClosed:1};
-    if(message.type==='SET_OPTION'){config=C.normalizeConfig({...config,[message.key]:message.value});return{ok:true,config};}
+    if(message.type==='SET_OPTION'){if(options.deferOption)await new Promise(resolve=>resolveOption=resolve);config=C.normalizeConfig({...config,[message.key]:message.value});return{ok:true,config};}
     if(message.type==='GET_YOUTUBE_DIAGNOSTIC')return{ok:true,expectedVersion:'0.4.0',registration:{active:true,error:null},main:{version:options.mainVersion||'0.4.0',installed:true,enabled:true,fetchMatched:1,xhrMatched:2,adFieldsRemoved:3}};
     return{ok:false,error:'Unexpected fixture message'};
   }},tabs:{query:async()=>[{id:7,url:options.url||'https://www.youtube.com/watch?token=private#private'}],sendMessage:async(...args)=>{sent.push(args);return{adsHidden:2,skipClicks:1};},reload:async()=>{}}};
@@ -29,7 +29,7 @@ async function fixture(options={}){
   vm.runInContext(fs.readFileSync(path.join(root,'popup.js'),'utf8'),context);
   const flush=async()=>{for(let i=0;i<3;i++)await new Promise(resolve=>setImmediate(resolve));};
   await flush();
-  return{nodes,requests,sent,flush,blob:()=>lastBlob,networkError:error=>network={...network,error}};
+  return{nodes,requests,sent,flush,finishOption:()=>resolveOption?.(),blob:()=>lastBlob,networkError:error=>network={...network,error}};
 }
 test('Firefox popup uses promise APIs, reads the main frame and keeps tabs keyboard accessible',async()=>{
   const f=await fixture();
@@ -57,4 +57,11 @@ test('the panel identifies an old player script still present in an existing tab
   assert.match(f.nodes.get('youtubeState').textContent,/abra uma nova/);
   assert.equal(f.nodes.get('youtubeState').classes.has('error'),true);
   assert.equal(f.nodes.get('version').textContent,'0.4.0');
+});
+test('a checkbox keeps the user-selected value while its native preference request is pending',async()=>{
+  const f=await fixture({deferOption:true});
+  const checkbox=f.nodes.get('popups');checkbox.checked=false;
+  checkbox.events.change({target:checkbox});
+  assert.equal(checkbox.disabled,true);assert.equal(checkbox.checked,false);
+  f.finishOption();await f.flush();assert.equal(checkbox.disabled,false);assert.equal(checkbox.checked,false);
 });

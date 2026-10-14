@@ -44,6 +44,7 @@
 
   function hideAd(node) {
     hide(node, 'ad');
+    if (!node?.hasAttribute(HIDDEN)) return;
     // Collapse an otherwise empty floating wrapper, including its close button.
     // Never climb into article, reader, navigation or app containers.
     let child = node;

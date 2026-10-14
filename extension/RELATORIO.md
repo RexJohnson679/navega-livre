@@ -10,7 +10,7 @@ Os filtros visuais usam os mesmos domínios publicitários das regras de rede. R
 
 ## Validação
 
-61 testes locais passaram na implementação. Há verificações específicas das APIs Chromium e Firefox, substituição por APIs compatíveis, pausa da página principal propagada para iframes, restauração de elementos, cliques falsos/automáticos, conservação de links e botões legítimos, diálogos normais, redirecionamentos de uma aba vazia e diagnóstico sem dados da página.
+62 testes locais passaram na implementação. Há verificações específicas das APIs Chromium e Firefox, substituição por APIs compatíveis, pausa da página principal propagada para iframes, restauração de elementos, cliques falsos/automáticos, conservação de links e botões legítimos, diálogos normais, redirecionamentos de uma aba vazia e diagnóstico sem dados da página.
 
 A automação de publicação exige ainda:
 

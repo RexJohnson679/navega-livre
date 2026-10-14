@@ -35,12 +35,12 @@ function render() {
   $('hostname').textContent = host || 'Página não suportada';
   $('status').textContent = on ? 'ATIVA' : 'PAUSADA';
   $('status').classList.toggle('off', !on);
-  $('siteEnabled').checked = host && !settings.disabledHosts.includes(host);
+  if (!busy) $('siteEnabled').checked = host && !settings.disabledHosts.includes(host);
   $('siteEnabled').disabled = !host || busy;
-  for (const key of C.OPTIONS) { $(key).checked = settings[key]; $(key).disabled = busy; }
+  for (const key of C.OPTIONS) { if (!busy) $(key).checked = settings[key]; $(key).disabled = busy; }
   for (const key of ['privacy', 'cosmetics', 'popups', 'youtube']) $(key).disabled = busy || !settings.enabled;
   for (const key of ['skipAds', 'muteAds']) $(key).disabled = busy || !settings.enabled || !settings.youtube;
-  $('autoRepair').checked = settings.repairHosts.includes(host);
+  if (!busy) $('autoRepair').checked = settings.repairHosts.includes(host);
   $('autoRepair').disabled = !on || busy;
   $('repair').disabled = !on || busy;
   $('reload').disabled = !host || busy;
