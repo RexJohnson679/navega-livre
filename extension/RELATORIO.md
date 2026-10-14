@@ -10,7 +10,7 @@ Os filtros visuais usam os mesmos domínios publicitários das regras de rede. R
 
 ## Validação
 
-59 testes locais passaram na implementação. Há verificações específicas das APIs Chromium e Firefox, substituição por APIs compatíveis, pausa da página principal propagada para iframes, restauração de elementos, cliques falsos/automáticos, conservação de links e botões legítimos, diálogos normais, redirecionamentos de uma aba vazia e diagnóstico sem dados da página.
+61 testes locais passaram na implementação. Há verificações específicas das APIs Chromium e Firefox, substituição por APIs compatíveis, pausa da página principal propagada para iframes, restauração de elementos, cliques falsos/automáticos, conservação de links e botões legítimos, diálogos normais, redirecionamentos de uma aba vazia e diagnóstico sem dados da página.
 
 A automação de publicação exige ainda:
 
@@ -22,6 +22,6 @@ O fluxo só libera a publicação se essas etapas passarem. Consulte o resultado
 
 ## Compatibilidade
 
-Scripts MAIN compartilhados não recebem APIs privilegiadas. Preferências cruzam a fronteira do Firefox como texto JSON. O script recebe apenas o estado dessa página; fechamento de abas se baseia em eventos nativos e no catálogo local. A pausa desliga o comportamento nas abas já carregadas; recarregar aplica as regras às próximas requisições.
+Scripts MAIN compartilhados não recebem APIs privilegiadas. As intervenções e o diagnóstico se referem explicitamente à janela da página, evitando confundir a janela com o global separado de scripts no Firefox. O teste do Firefox também verifica dados do player e leitura por WebDriver considerando seu sandbox. Preferências cruzam a fronteira do Firefox como texto JSON. O script recebe apenas o estado dessa página; fechamento de abas se baseia em eventos nativos e no catálogo local. A pausa desliga o comportamento nas abas já carregadas; recarregar aplica as regras às próximas requisições.
 
 Aberturas assíncronas incomuns de um site podem precisar de uma exceção pelo controle de pop-ups. O Firefox continua com instalação temporária enquanto o pacote não for assinado. Os ajustes do player e os testes de regressão da 0.3.1 são mantidos.

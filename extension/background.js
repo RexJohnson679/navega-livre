@@ -91,6 +91,7 @@ async function syncPopupScript(value) {
     popupRegistration = {active: true, error: null};
   } catch (error) {
     popupRegistration = {active: false, error: String(error?.message || error).slice(0, 240)};
+    console.warn('[Navega Livre] Popup registration warning:', error);
   }
 }
 
@@ -239,7 +240,7 @@ async function handle(message, sender) {
   }
   
   const extUrl = browserApi.runtime.getURL('');
-  if (sender.tab || !sender.url?.startsWith(extUrl)) return {ok: false, error: 'Origem inválida.'};
+  if (!sender.url?.startsWith(extUrl) || (sender.tab?.url && !sender.tab.url.startsWith(extUrl))) return {ok: false, error: 'Origem inválida.'};
   
   if (message.type === 'GET_CONFIG') {
     await queue;
@@ -251,7 +252,7 @@ async function handle(message, sender) {
     let main = {installed: false}, error = null;
     if (C.normalizeHost(tab.url || '')) try {
       const results = await browserApi.scripting.executeScript({target: {tabId: tab.id}, world: 'MAIN', func: () => {
-        const read = globalThis.__navegaLivrePopupState;
+        const read = (typeof window === 'object' ? window : globalThis).__navegaLivrePopupState;
         if (typeof read !== 'function') return {installed: false};
         const raw = read(), safe = {installed: raw?.installed === true, enabled: raw?.enabled === true};
         safe.version = typeof raw?.version === 'string' && /^\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(raw.version) ? raw.version : null;
@@ -271,7 +272,7 @@ async function handle(message, sender) {
     let main = {installed: false}, error = null;
     try {
       const results = await browserApi.scripting.executeScript({target: {tabId: tab.id}, world: 'MAIN', func: () => {
-        const read = globalThis.__navegaLivreYoutubeState;
+        const read = (typeof window === 'object' ? window : globalThis).__navegaLivreYoutubeState;
         if (typeof read !== 'function') return {installed: false};
         const raw = read();
         const safe = {installed: raw?.installed === true, enabled: raw?.enabled === true};

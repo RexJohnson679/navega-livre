@@ -25,7 +25,7 @@
 
   let settings = C.normalizeConfig();
   let ready = false, timer = null, pending = null;
-  let topHost = HOST, frameReady = !globalThis.top || globalThis.top === globalThis;
+  let topHost = HOST, frameReady = typeof window === 'object' ? window.top === window : !globalThis.top || globalThis.top === globalThis;
   let lastSkip = 0, lastKnown = 0, overflowSaved = null;
   const originalMuted = new Map();
   const hiddenNodes = new Set();

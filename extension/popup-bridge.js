@@ -4,7 +4,7 @@
   const C = globalThis.NavegaCore;
   const api = typeof browser !== 'undefined' ? browser : chrome;
   let settings = C.normalizeConfig(), ready = false, topHost = location.hostname;
-  let frameReady = globalThis.top === globalThis;
+  let frameReady = typeof window === 'object' ? window.top === window : globalThis.top === globalThis;
   function send() {
     if (!ready || !frameReady) return;
     document.dispatchEvent(new CustomEvent('navega-livre-popup-config', {detail: JSON.stringify({

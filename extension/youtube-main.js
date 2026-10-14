@@ -2,12 +2,13 @@
  * URLs, account state, content authorization, or player timing. */
 (() => {
   'use strict';
-  if (globalThis.__navegaLivreYoutubeInstalled) return;
-  globalThis.__navegaLivreYoutubeInstalled = true;
+  const W = typeof window === 'object' ? window : globalThis;
+  if (W.__navegaLivreYoutubeInstalled) return;
+  W.__navegaLivreYoutubeInstalled = true;
   let enabled = true;
   const state = {version: '0.4.0', startedAt: Date.now(), fetchMatched: 0,
     xhrMatched: 0, initialObjectsCleaned: 0, embeddedResponsesCleaned: 0, adFieldsRemoved: 0, parseFailures: 0};
-  Object.defineProperty(globalThis, '__navegaLivreYoutubeState', {
+  Object.defineProperty(W, '__navegaLivreYoutubeState', {
     configurable: true, value: () => ({...state, installed: true, enabled})
   });
   const AD_KEYS = new Set(['playerAds', 'adPlacements', 'adSlots']);
@@ -64,18 +65,18 @@
     } catch { /* Leave protected properties unchanged. */ }
   }
   for (const key of ['ytInitialPlayerResponse', 'ytInitialData', 'ytplayer']) {
-    watchObject(globalThis, key);
+    watchObject(W, key);
   }
   function attachLegacyConfig() {
     // Do not create a yt object: the page owns its lifecycle and API.
-    if (globalThis.yt && typeof globalThis.yt === 'object') watchObject(globalThis.yt, 'player');
+    if (W.yt && typeof W.yt === 'object') watchObject(W.yt, 'player');
   }
   attachLegacyConfig();
   document.addEventListener('DOMContentLoaded', attachLegacyConfig, {once: true});
   document.addEventListener('yt-navigate-start', attachLegacyConfig);
-  if (typeof globalThis.fetch === 'function') {
-    const original = globalThis.fetch;
-    globalThis.fetch = async function(input) {
+  if (typeof W.fetch === 'function') {
+    const original = W.fetch;
+    W.fetch = async function(input) {
       const response = await Reflect.apply(original, this, arguments);
       if (!enabled || !response.ok || !playerEndpoint(input)) return response;
       state.fetchMatched++;
@@ -92,7 +93,7 @@
       } catch { return response; }
     };
   }
-  const XHR = globalThis.XMLHttpRequest;
+  const XHR = W.XMLHttpRequest;
   if (XHR?.prototype) {
     const proto = XHR.prototype;
     const nativeOpen = proto.open;

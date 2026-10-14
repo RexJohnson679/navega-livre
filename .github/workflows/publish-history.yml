@@ -57,7 +57,7 @@ jobs:
         env:
           NAVEGA_EXTENSION_DIR: dist/firefox
         run: |
-          printf '%s\n' '127.0.0.1 reader.navega.test news.navega.test video.navega.test normal.navega.test ad.a-ads.com' | sudo tee -a /etc/hosts >/dev/null
+          printf '%s\n' '127.0.0.1 reader.navega.test news.navega.test video.navega.test normal.navega.test ad.a-ads.com www.youtube.com' | sudo tee -a /etc/hosts >/dev/null
           python3 extension/tests/firefox.e2e.py
   publish:
     needs: verify

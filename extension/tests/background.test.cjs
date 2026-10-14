@@ -90,6 +90,12 @@ test('content scripts cannot change preferences or request arbitrary injection',
   const known=await f.send({type:'KNOWN_REPAIR'},{tab:{id:7,url:'https://example.test/'}});
   assert.equal(known.repaired,false);
 });
+test('a native extension view opened in its own tab is trusted, while normal page tab senders are rejected',async()=>{
+  const f=await workerFixture();
+  assert.equal((await f.send({type:'GET_CONFIG'},{url:'chrome-extension://fixture/popup.html',tab:{id:10,url:'chrome-extension://fixture/popup.html'}})).ok,true);
+  assert.equal((await f.send({type:'GET_CONFIG'},{url:'https://example.test/',tab:{id:7,url:'https://example.test/'}})).ok,false);
+  assert.equal((await f.send({type:'GET_CONFIG'},{url:'chrome-extension://fixture/popup.html',tab:{id:7,url:'https://example.test/'}})).ok,false);
+});
 test('player diagnostic detects missing script and reports registration failures',async()=>{
   const f=await workerFixture({url:'https://www.youtube.com/watch',registrationError:'Fixture registration error'});
   const result=await f.send({type:'GET_YOUTUBE_DIAGNOSTIC',tabId:7});

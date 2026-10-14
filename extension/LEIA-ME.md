@@ -57,7 +57,7 @@ npm run build:firefox
 python3 .github/scripts/check_packages.py
 ```
 
-59 testes locais cobrem preferências, pausa, rede, registro de scripts, player, iframes, cosméticos, pop-ups, diálogos e diagnóstico. O fluxo do GitHub Actions exige testes com a extensão instalada em Chromium e Firefox antes de publicar um lançamento. As páginas desses testes são controladas e simulam sites de leitura, notícias e vídeo, com anúncios de redes e cliques de tipos diferentes; não são uma medição de todos os sites reais nem uma pontuação em benchmarks.
+61 testes locais cobrem preferências, pausa, rede, registro de scripts, player, iframes, cosméticos, pop-ups, diálogos e diagnóstico. O fluxo do GitHub Actions exige testes com a extensão instalada em Chromium e Firefox antes de publicar um lançamento. As páginas desses testes são controladas e simulam sites de leitura, notícias e vídeo, com anúncios de redes e cliques de tipos diferentes; não são uma medição de todos os sites reais nem uma pontuação em benchmarks.
 
 Os testes de navegador usam Playwright 1.64.0 e Selenium 4.51.0 em perfis descartáveis. Não acessam contas nem instalam a extensão no navegador de quem usa o projeto. Resultados e falhas ficam em [Actions](https://github.com/RexJohnson679/navega-livre/actions).
 

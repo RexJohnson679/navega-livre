@@ -2,13 +2,14 @@
 (() => {
   'use strict';
   const P = globalThis.NavegaPopupPolicy;
-  if (!P || typeof globalThis.__navegaLivrePopupState === 'function') return;
+  const W = typeof window === 'object' ? window : globalThis;
+  if (!P || typeof W.__navegaLivrePopupState === 'function') return;
   const VERSION = '0.4.0';
-  let enabled = globalThis.top === globalThis;
+  let enabled = W.top === W;
   let gesture = null;
   const counters = {popupsBlocked: 0, linksBlocked: 0, dialogsBlocked: 0};
   const adFrame = P.adUrl(location.href);
-  const nativeOpen = globalThis.open;
+  const nativeOpen = W.open;
   const now = () => performance.now();
   const realElement = node => node && node.nodeType === 1;
   function clickedElement(event) {
@@ -48,23 +49,23 @@
   for (const type of ['pointerdown', 'mousedown', 'touchend', 'click', 'auxclick']) {
     addEventListener(type, record, {capture: true, passive: false});
   }
-  if (typeof nativeOpen === 'function') globalThis.open = function(...args) {
+  if (typeof nativeOpen === 'function') W.open = function(...args) {
     const blocked = P.shouldBlockOpen(args[0], args[1], {
       enabled, base: location.href, adFrame, gesture,
       fresh: Boolean(gesture && now() - gesture.time < 700 && navigator.userActivation?.isActive !== false)
     });
     if (blocked) { counters.popupsBlocked++; return null; }
-    return Reflect.apply(nativeOpen, globalThis, args);
+    return Reflect.apply(nativeOpen, W, args);
   };
   for (const name of ['alert', 'confirm', 'prompt']) {
-    const native = globalThis[name];
+    const native = W[name];
     if (typeof native !== 'function') continue;
-    globalThis[name] = function(...args) {
+    W[name] = function(...args) {
       if (enabled && P.installBait(args[0])) {
         counters.dialogsBlocked++;
         return name === 'confirm' ? false : name === 'prompt' ? null : undefined;
       }
-      return Reflect.apply(native, globalThis, args);
+      return Reflect.apply(native, W, args);
     };
   }
   document.addEventListener('navega-livre-popup-config', event => {
@@ -75,7 +76,7 @@
     } catch { /* Untrusted page event. */ }
   });
   // Values are copied. No URL, clicked text, form value or browsing history is exposed.
-  Object.defineProperty(globalThis, '__navegaLivrePopupState', {configurable: true,
+  Object.defineProperty(W, '__navegaLivrePopupState', {configurable: true,
     value: () => ({installed: true, version: VERSION, enabled, ...counters})});
   document.dispatchEvent(new Event('navega-livre-popup-ready'));
 })();

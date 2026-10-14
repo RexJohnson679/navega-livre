@@ -104,3 +104,14 @@ test('Firefox preference bridge honors a paused parent frame and emits JSON text
   changed({config:{newValue:C.normalizeConfig()}},'local');assert.equal(JSON.parse(events.at(-1).detail).enabled,true);
   readyHandler();assert.equal(typeof events.at(-1).detail,'string');assert.deepEqual(Object.keys(JSON.parse(events.at(-1).detail)),['enabled']);
 });
+test('the MAIN guard modifies the actual page Window when the execution global is a separate Firefox-style object',()=>{
+  const page={open:function(){assert.equal(this,page);return 'native';}},listeners={};page.top=page;
+  const context=vm.createContext({window:page,top:page,NavegaPopupPolicy:P,
+    location:{href:'https://reader.example/'},performance:{now:()=>0},navigator:{userActivation:{isActive:true}},
+    addEventListener(){},setTimeout(){},document:{addEventListener:(name,fn)=>listeners[name]=fn,dispatchEvent(){}},Event:class{}});
+  vm.runInContext(source,context);
+  assert.equal(page.__navegaLivrePopupState().enabled,true);
+  assert.equal(page.open('https://unknown.example/'),null);
+  listeners['navega-livre-popup-config']({detail:'{"enabled":false}'});
+  assert.equal(page.open('https://popads.net/'),'native');
+});
