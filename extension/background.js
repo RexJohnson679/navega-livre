@@ -72,9 +72,13 @@ async function syncPopupScript(value) {
       popupTargets.clear();
       return;
     }
+    // Keep Firefox's verified ordered MAIN files. Chromium needs an entry
+    // whose helpers do not reuse filenames from the isolated content script.
+    const mainFiles = browserApi.runtime.getURL('').startsWith('moz-extension://')
+      ? ['filter-data.js', 'popup-policy.js', 'popup-main.js'] : ['popup-main-bundle.js'];
     const script = {id, matches: ['http://*/*', 'https://*/*'],
       excludeMatches: value.disabledHosts.map(host => '*://' + host + '/*'),
-      js: ['popup-main-bundle.js'], runAt: 'document_start',
+      js: mainFiles, runAt: 'document_start',
       world: 'MAIN', allFrames: true, persistAcrossSessions: true};
     const current = existing[0];
     const equal = (a = [], b = []) => a.length === b.length && [...a].sort().every((x, i) => x === [...b].sort()[i]);

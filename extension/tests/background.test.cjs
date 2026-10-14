@@ -6,13 +6,14 @@ const path = require('node:path');
 const C = require('../common.js');
 const P = require('../popup-policy.js');
 async function workerFixture(options={}){
+  const extensionOrigin=options.firefox?'moz-extension://fixture/':'chrome-extension://fixture/';
   let config=C.normalizeConfig(),rules=[],enabled=['advertising','privacy'],installed,message,changed,registered=options.registered||[];
   const scriptCalls=[],popupCalls=[],removed=[];
   const events={};
   const tabData=new Map([[7,{id:7,url:options.url||'https://example.test/path'}]]);
   const calls=[];const errors=[];
   const chrome={
-    runtime:{getURL:p=>'chrome-extension://fixture/'+p,getManifest:()=>({version:C.FILTER_INFO.version}),onInstalled:{addListener:fn=>installed=fn},onStartup:{addListener(){}},onMessage:{addListener:fn=>message=fn}},
+    runtime:{getURL:p=>extensionOrigin+p,getManifest:()=>({version:C.FILTER_INFO.version}),onInstalled:{addListener:fn=>installed=fn},onStartup:{addListener(){}},onMessage:{addListener:fn=>message=fn}},
     storage:{local:{get:async()=>({config}),set:async data=>{config=data.config;changed?.({config:{newValue:config}},'local');}},onChanged:{addListener:fn=>changed=fn}},
     declarativeNetRequest:{getDynamicRules:async()=>rules,updateDynamicRules:async change=>{rules=change.addRules;calls.push(change);},updateEnabledRulesets:async change=>enabled=change.enableRulesetIds,getEnabledRulesets:async()=>{if(options.networkError)throw Error(options.networkError);return enabled;}},
     action:{setBadgeText:async()=>{},setBadgeBackgroundColor:async()=>{}},
@@ -39,7 +40,7 @@ async function workerFixture(options={}){
   const context=vm.createContext({NavegaCore:C,NavegaPopupPolicy:P,importScripts(){},...(options.firefox ? {browser:chrome,chrome:{}} : {chrome}),console:{error:(...args)=>errors.push(args),warn(){}},URL});
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../background.js'),'utf8'),context);
   await new Promise(resolve=>setImmediate(resolve));
-  async function send(data,sender={url:'chrome-extension://fixture/popup.html'}){
+  async function send(data,sender={url:extensionOrigin+'popup.html'}){
     return new Promise(resolve=>message(data,sender,resolve));
   }
   return{send,installed,calls,scriptCalls,popupCalls,errors,events,removed,tabData,state:()=>({config,rules,enabled,registered})};
@@ -163,7 +164,7 @@ for(const firefox of [false,true]) {
     await f.events.created({sourceTabId:7,tabId:11,url:'https://popads.net/ad'});assert.deepEqual(f.removed,[10]);
     const script=f.state().registered.find(s=>s.id==='navega-popup-main');
     assert.deepEqual([...script.excludeMatches],['*://example.test/*']);assert.equal(script.allFrames,true);
-    assert.deepEqual([...script.js],['popup-main-bundle.js']);assert.equal(script.world,'MAIN');
+    assert.deepEqual([...script.js],firefox?['filter-data.js','popup-policy.js','popup-main.js']:['popup-main-bundle.js']);assert.equal(script.world,'MAIN');
     await f.send({type:'SET_SITE',tabId:7,enabled:true});
     await f.send({type:'SET_OPTION',key:'popups',value:false});
     assert.ok(!f.state().registered.some(s=>s.id==='navega-popup-main'));

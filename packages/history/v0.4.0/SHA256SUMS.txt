@@ -1,3 +1,3 @@
-12610e7e1f9b3f28be3d0a5afaf5a4537ee43eeeb46804bc54277df70ae64b4d  navega-livre-chromium-v0.4.0.zip
-7ce603229380f6e4afce9b50af99aad8f1982dd0d37dfbc518abb1549cdf6dec  navega-livre-firefox-v0.4.0.zip
+81eab441db7a888c26c510d437fd2daef7efd076e4081a98bc704de9cf603f5a  navega-livre-chromium-v0.4.0.zip
+bd6eb9ca76ce773e663513a25522aa07d9c6b8062632e2dced94f3c62e384c8b  navega-livre-firefox-v0.4.0.zip
 8e455c98b952282a93033b0e0a4a5880c7b8cb6bc5b71a12887f8fdbc6d3aa1e  LICENSE-MIT.txt
