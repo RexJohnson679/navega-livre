@@ -1,2 +1,16 @@
-# navega-livre
-Extensão para navegadores focada em redução local de anúncios, ajustes no YouTube e reparo de avisos de adblock.
+# Navega Livre 0.2.0 — snapshot arquivado
+
+Ampliação do filtro experimental do YouTube no pacote Chromium.
+
+### Mudanças
+
+- Tratamento de respostas `XMLHttpRequest` em texto e JSON, além de `fetch`.
+- Suporte ao endpoint correspondente em `youtubei.googleapis.com`.
+- Indicador de carregamento do filtro e contadores locais no diagnóstico.
+
+Nesta revisão existia um pacote Chromium 0.2.0; o Firefox continuava na 0.1.0. Não há um pacote Firefox 0.2.0 no arquivo preservado.
+
+O registro do filtro ainda tinha a chamada de atualização incorreta corrigida na 0.3.1. Prefira a versão atual para uso. O ZIP anexado preserva o pacote da época; o código do tag foi reconstruído dele. Este lançamento é uma publicação retrospectiva do histórico.
+
+
+As pastas `chromium/` e, quando disponível, `firefox/` contêm os arquivos extraídos dos pacotes preservados.
