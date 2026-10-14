@@ -26,6 +26,8 @@ Os ajustes do YouTube são experimentais: anúncios de vídeo podem permanecer. 
 
 ## Instalar
 
+Os pacotes também estão em [Releases](https://github.com/RexJohnson679/navega-livre/releases), com notas de cada versão. Veja o [histórico das mudanças](CHANGELOG.md). As versões antigas são arquivos retrospectivos; a recomendada entre os pacotes preservados é a 0.3.1.
+
 Não é necessário Node para instalar os pacotes prontos.
 
 | Pacote | Navegadores | Mínimo declarado |

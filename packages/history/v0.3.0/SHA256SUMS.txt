@@ -1,0 +1,3 @@
+cdc73caf90500340f69dc94b2e8491abed885be20f8881ae0a43bb775381740c  navega-livre-chromium-v0.3.0.zip
+2efd60694c5c60c7c755b42fb1095029c9c866fc3518ed9a27aa819605e64c32  navega-livre-firefox-v0.3.0.zip
+8e455c98b952282a93033b0e0a4a5880c7b8cb6bc5b71a12887f8fdbc6d3aa1e  LICENSE-MIT.txt

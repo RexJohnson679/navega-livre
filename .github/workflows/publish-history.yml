@@ -1,0 +1,37 @@
+name: Publicar histórico de versões
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/release-history.json'
+      - '.github/scripts/publish_history.py'
+      - '.github/workflows/publish-history.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: navega-livre-release-history
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'RexJohnson679/navega-livre' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Obter o commit público exato
+        shell: bash
+        run: |
+          git init --quiet
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git fetch --quiet --depth=1 origin "${GITHUB_SHA}"
+          git checkout --quiet --detach FETCH_HEAD
+      - name: Conferir o publicador
+        run: python3 -m unittest discover -s .github/tests -v
+      - name: Publicar notas e arquivos dos lançamentos
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 .github/scripts/publish_history.py

@@ -1,0 +1,98 @@
+[
+  {
+    "tag": "v0.1.0",
+    "name": "Navega Livre 0.1.0 — Primeiros pacotes",
+    "target": "0887383adab79f1b1f07e616c2146dfb2e5fc07b",
+    "notes": ".github/release-notes/v0.1.0.md",
+    "latest": false,
+    "assets": [
+      {
+        "path": "packages/history/v0.1.0/navega-livre-chromium-v0.1.0.zip",
+        "sha256": "794ee6806e889e874ff76dedebbe012b9196ee08d69e03b84f483c03918f89b7"
+      },
+      {
+        "path": "packages/history/v0.1.0/navega-livre-firefox-v0.1.0.zip",
+        "sha256": "988f621f78d7753178a059b14ae54979fefa1747ee07c352f0b43cbde6e85c50"
+      },
+      {
+        "path": "packages/history/v0.1.0/LICENSE-MIT.txt",
+        "sha256": "8e455c98b952282a93033b0e0a4a5880c7b8cb6bc5b71a12887f8fdbc6d3aa1e"
+      },
+      {
+        "path": "packages/history/v0.1.0/SHA256SUMS.txt",
+        "sha256": "f71d1883a4d5a5357600c40f08ac7b3c6402f846a3d8f3189cecc1777238877b"
+      }
+    ]
+  },
+  {
+    "tag": "v0.2.0",
+    "name": "Navega Livre 0.2.0 — Filtro XHR e diagnóstico",
+    "target": "8174e9920fbfef2b68d6e8113d1c9fc61c60e262",
+    "notes": ".github/release-notes/v0.2.0.md",
+    "latest": false,
+    "assets": [
+      {
+        "path": "packages/history/v0.2.0/navega-livre-chromium-v0.2.0.zip",
+        "sha256": "16f56a439b2642d4de4be4c801344d386f6087c0c39946395a5c74660dd56a5c"
+      },
+      {
+        "path": "packages/history/v0.2.0/LICENSE-MIT.txt",
+        "sha256": "8e455c98b952282a93033b0e0a4a5880c7b8cb6bc5b71a12887f8fdbc6d3aa1e"
+      },
+      {
+        "path": "packages/history/v0.2.0/SHA256SUMS.txt",
+        "sha256": "532a60f6545128f2b0a6516e66b7b8ef805185d193f0108834671e7f0ae35183"
+      }
+    ]
+  },
+  {
+    "tag": "v0.3.0",
+    "name": "Navega Livre 0.3.0 — Filtros ampliados",
+    "target": "2e400200a7b665a4b7bfea4191194581142c5f24",
+    "notes": ".github/release-notes/v0.3.0.md",
+    "latest": false,
+    "assets": [
+      {
+        "path": "packages/history/v0.3.0/navega-livre-chromium-v0.3.0.zip",
+        "sha256": "cdc73caf90500340f69dc94b2e8491abed885be20f8881ae0a43bb775381740c"
+      },
+      {
+        "path": "packages/history/v0.3.0/navega-livre-firefox-v0.3.0.zip",
+        "sha256": "2efd60694c5c60c7c755b42fb1095029c9c866fc3518ed9a27aa819605e64c32"
+      },
+      {
+        "path": "packages/history/v0.3.0/LICENSE-MIT.txt",
+        "sha256": "8e455c98b952282a93033b0e0a4a5880c7b8cb6bc5b71a12887f8fdbc6d3aa1e"
+      },
+      {
+        "path": "packages/history/v0.3.0/SHA256SUMS.txt",
+        "sha256": "f7885d4da52c4159f91befb6242ca7ca7f517a2d48c1d52743fe5b714dd6619f"
+      }
+    ]
+  },
+  {
+    "tag": "v0.3.1",
+    "name": "Navega Livre 0.3.1 — Correção no registro do YouTube",
+    "target": "current",
+    "notes": ".github/release-notes/v0.3.1.md",
+    "latest": true,
+    "assets": [
+      {
+        "path": "packages/history/v0.3.1/navega-livre-chromium-v0.3.1.zip",
+        "sha256": "87893a147f4804a8143dcfbcbd3fccebc25945264e8ae7bc50870af70e2d4063"
+      },
+      {
+        "path": "packages/history/v0.3.1/navega-livre-firefox-v0.3.1.zip",
+        "sha256": "7a9a861be963c3c64ff0065940aab4bae75d461396e2330e61901cee9117de9d"
+      },
+      {
+        "path": "packages/history/v0.3.1/LICENSE-MIT.txt",
+        "sha256": "8e455c98b952282a93033b0e0a4a5880c7b8cb6bc5b71a12887f8fdbc6d3aa1e"
+      },
+      {
+        "path": "packages/history/v0.3.1/SHA256SUMS.txt",
+        "sha256": "6b3d015ec8ddbb94d0abce8290710f00a0f778d462c0a3b004c05f3f23212456"
+      }
+    ]
+  }
+]
