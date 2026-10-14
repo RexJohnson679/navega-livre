@@ -154,7 +154,8 @@ const knownFixture = `<!doctype html><html><body>
     await popup.locator('#enabled').uncheck();
     await worker.evaluate(async () => {
       for(let i=0;i<100;i++) {
-        if (!(await chrome.declarativeNetRequest.getEnabledRulesets()).includes('advertising')) return;
+        const saved = (await chrome.storage.local.get('config')).config;
+        if (!(await chrome.declarativeNetRequest.getEnabledRulesets()).includes('advertising') && saved?.enabled === false) return;
         await new Promise(resolve => setTimeout(resolve,25));
       }
       throw Error('Global pause failed');
