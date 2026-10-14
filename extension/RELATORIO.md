@@ -1,58 +1,27 @@
-# Correção 0.3.1 — registro do filtro do player
+# Revisão 0.4.0 — anúncios de página e pop-ups
 
-A imagem enviada pelo usuário mostrou `browserApi.scripting.updateRegisteredContentScripts is not a function`. Esse método era um nome incorreto no código e também no mock dos testes anteriores. Foi substituído por `scripting.updateContentScripts`, conforme a documentação de Chrome e Mozilla. O registro idêntico é reaproveitado; sem o método de atualização, o script é removido e registrado de novo pelas APIs suportadas.
+## Evidência e correções
 
-O painel identifica a versão do filtro da aba e alerta sobre scripts antigos. Cinco testes novos verificam atualização em Chromium/Firefox, falta do método opcional, pausa por domínio/registro repetido e diagnóstico de uma aba antiga. Total atual: **42 testes simulados aprovados**. A correção foi conferida contra as APIs documentadas, sem uma instalação real neste ambiente. A eliminação de todos os anúncios de vídeo continua sem confirmação.
+As imagens enviadas mostravam um anúncio flutuante e um diálogo pedindo instalar Ad Blocker Premium. Na inspeção pública do DOM do LycanToons, foram observados slots `ins.pubadx-slot`, frames A-Ads/PubADX e carregadores em `ppo.diveinthebluesky.biz`, `pa.diffgremio.com`, `acscdn.com` e `platform.pubadx.one`. O catálogo anterior não incluía essas quatro origens. Não foram copiados tokens, IDs de sessão, conteúdo de anúncios ou imagens do usuário para o repositório.
 
-Fontes: [Chrome scripting](https://developer.chrome.com/docs/extensions/reference/api/scripting#method-updateContentScripts) e [Mozilla updateContentScripts](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/scripting/updateContentScripts).
+A nova proteção intercepta `window.open` no início da página, confere o destino escolhido em um clique e bloqueia diálogos de instalação falsos. Uma camada nativa identifica somente abas recém-criadas a partir de outra aba; destinos conhecidos de publicidade podem ser fechados nos primeiros 15 segundos. Não há fechamento por mensagem enviada pela página nem inspeção de abas preexistentes. Relações entre IDs e contadores são temporários e limitados.
 
-# Revisão 0.3.0 — 14/10/2026
+Os filtros visuais usam os mesmos domínios publicitários das regras de rede. Reconhecem slots, frames, imagens e links conhecidos, inclusive anúncios inseridos depois do carregamento. Um contêiner flutuante só é colapsado quando contém apenas o anúncio e controles simples de fechar; não se sobe para o leitor, artigo, navegação ou raiz da aplicação.
 
-## Problemas encontrados nos pacotes recebidos
+## Validação
 
-O pacote Chromium estava na versão 0.2.0. O Firefox ainda estava em 0.1.0, sem permissão `declarativeNetRequest` e sem declaração da lista de rede, e declarava mínimo 121 apesar do uso de `MAIN`, introduzido no Firefox 128. Os dois tinham apenas 16 domínios na lista de publicidade. O Firefox também tinha o filtro antigo do player, que não tratava `XMLHttpRequest`.
+59 testes locais passaram na implementação. Há verificações específicas das APIs Chromium e Firefox, substituição por APIs compatíveis, pausa da página principal propagada para iframes, restauração de elementos, cliques falsos/automáticos, conservação de links e botões legítimos, diálogos normais, redirecionamentos de uma aba vazia e diagnóstico sem dados da página.
 
-Estas são falhas comprovadas na estrutura do pacote. Não foi possível demonstrar que explicam cada anúncio visto pelo usuário: a reprodução real no YouTube não foi validada nesta revisão.
+A automação de publicação exige ainda:
 
-## Resultado entregue
+1. Builds de Chromium e Firefox e conferência de todos os bytes de cada arquivo dentro dos ZIPs.
+2. Extensão instalada em Chromium: player, rede, pausa, avisos e painel; mais cenários de leitura, notícias e vídeo.
+3. Extensão instalada temporariamente em Firefox: scripts MAIN/isolados, banners, anúncios flutuantes e dinâmicos, frames, cliques com aba extra, links e botões normais e diálogo falso.
 
-Dois pacotes 0.3.0, gerados do mesmo código, com fundo próprio para cada navegador. Bloqueio de rede ativado no Firefox, lista principal ampliada, lista adicional de rastreadores, filtros de scripts publicitários, seleção cosmética ampliada, CSS declarado no manifesto e controles independentes.
+O fluxo só libera a publicação se essas etapas passarem. Consulte o resultado do commit em GitHub Actions. Os cenários de navegador usam páginas locais controladas, com diferentes domínios e formatos. A inspeção do site real informou filtros; ela não equivale a instalar a nova extensão na conta/navegador do usuário. Não foi atribuída pontuação de benchmark nem garantia de remoção de todos os anúncios em sites reais.
 
-Filtro do YouTube sincronizado: dados iniciais e antigos, fetch e XHR, ponte de preferências em texto e diagnóstico do carregamento. Pausa de sites considerada em iframes, restauração de elementos/áudio e observação do DOM sem intervalo periódico em sites comuns.
+## Compatibilidade
 
-Painel com abas, teclado, dependências entre opções e falhas de rede visíveis. Exportação de diagnóstico limitada à origem, sem caminho ou parâmetros da página.
+Scripts MAIN compartilhados não recebem APIs privilegiadas. Preferências cruzam a fronteira do Firefox como texto JSON. O script recebe apenas o estado dessa página; fechamento de abas se baseia em eventos nativos e no catálogo local. A pausa desliga o comportamento nas abas já carregadas; recarregar aplica as regras às próximas requisições.
 
-## Verificação executada
-
-37 testes automatizados passaram, com Node e APIs/DOM simulados:
-
-- configuração, reconhecimento de domínio e exceções sem correspondência com domínios parecidos;
-- fila de alterações, permissão de operações e escolha do namespace de APIs Firefox;
-- ativação/desativação de listas, registro `MAIN` cedo e estado de falhas;
-- mensagens em texto entre ambientes, pausa global e por domínio, inclusive em molduras;
-- ocultação/restauração de espaços conhecidos e reconhecimento seletivo de avisos;
-- clique apenas em botão de pular disponível e restauração do áudio;
-- limpeza de dados iniciais, JSON embutido, fetch, XHR texto/JSON e prefixo XSSI;
-- preservação de respostas comuns, requisições falhas/parciais, URLs, assinaturas e dados da conta;
-- controles do painel, teclado, consulta do frame principal e exportação sem URL privada;
-- simulação de cobertura de redes e scripts, exclusão de navegação principal e preservação de hosts de vídeo/CDNs compartilhados;
-- geração determinística de manifestos Chromium/Firefox com arquivos e listas apropriados.
-
-Também foram conferidos sintaxe, domínios das regras, caminhos declarados, arquivos dos ZIPs e integridade dos arquivos compactados. Os testes de regras simulam as condições usadas no projeto; não substituem o motor real do navegador.
-
-## Verificação que continua pendente
-
-O site Turtlecute abriu, mas o navegador deste ambiente rejeitou acesso à instalação de extensões. O ambiente local não possui binários completos de Chromium/Firefox. Assim, não houve instalação real destes pacotes, medição de uma nova porcentagem, teste visual do painel nem reprodução real com anúncios no YouTube.
-
-`tests/browser.e2e.cjs` foi atualizado para testar o pacote Chromium em páginas simuladas com Playwright. Está incluído, mas não foi executado nesta revisão.
-
-Não há garantia de 100% nem regra para falsear o placar de um teste. A lista é uma base inicial ampliada, e formatos do YouTube e detectores por site exigem manutenção. As listas são snapshots locais; não há atualização automática.
-
-## Confirmação nos navegadores
-
-1. Instale apenas a cópia nova do Navega Livre; confira versão 0.3.0.
-2. Feche o YouTube antigo, abra uma aba nova e confira os estados de rede e player no painel.
-3. Teste um vídeo normal, avanço, troca de vídeo, pausa e áudio. Registre que tipo de anúncio restou.
-4. Teste pausa por site e recarga; confirme que conteúdo ocultado volta e que a página continua funcional.
-5. Rode Turtlecute com as mesmas condições antes/depois. Para isolar a extensão, use um perfil de teste; registre falhas por categoria.
-6. Se persistir uma falha, exporte o diagnóstico local e anote navegador, versão e tipo de anúncio.
+Aberturas assíncronas incomuns de um site podem precisar de uma exceção pelo controle de pop-ups. O Firefox continua com instalação temporária enquanto o pacote não for assinado. Os ajustes do player e os testes de regressão da 0.3.1 são mantidos.

@@ -303,6 +303,7 @@
         "ackng.com",
         "ackzany.com",
         "acrdb.alphonso.tv",
+        "acscdn.com",
         "acspaces.ero-advertising.com",
         "ad-delivery.net",
         "ad-dev.globalnoticias.pt",
@@ -405,8 +406,7 @@
         "adservice.google.co.in",
         "adservice.google.com",
         "adservice.google.com.vn",
-        "adsflame.com",
-        "adsninjacdn.b-cdn.net"
+        "adsflame.com"
       ],
       "domainType": "thirdParty",
       "resourceTypes": [
@@ -431,6 +431,7 @@
     },
     "condition": {
       "requestDomains": [
+        "adsninjacdn.b-cdn.net",
         "adspacds.ero-advertising.com",
         "adspaces.ero-ades.ero-advertising.com",
         "adspaces.ero-apaces.ero-advertising.com",
@@ -829,8 +830,7 @@
         "carniferou.club",
         "casalemedia.com",
         "castoola.com",
-        "cata.ero-advertising.com",
-        "cbox4.ignorelist.com"
+        "cata.ero-advertising.com"
       ],
       "domainType": "thirdParty",
       "resourceTypes": [
@@ -855,6 +855,7 @@
     },
     "condition": {
       "requestDomains": [
+        "cbox4.ignorelist.com",
         "cc.sys.intl.xiaomi.com",
         "cc.sys.miui.com",
         "ccc.sys.intl.xiaomi.com",
@@ -1103,6 +1104,7 @@
         "discord-app.net",
         "discoveryad.castoola.tv",
         "discuz.gtimg.cn",
+        "diveinthebluesky.biz",
         "dmp.adviad.com",
         "dnacdn.net",
         "dns-info.dyndns.pro",
@@ -1252,9 +1254,7 @@
         "foldexmoon.top",
         "foldexmoon.world",
         "foldexmoon.xyz",
-        "foodandcot.com",
-        "fortnight.space",
-        "fortnitechat.site"
+        "foodandcot.com"
       ],
       "domainType": "thirdParty",
       "resourceTypes": [
@@ -1279,6 +1279,8 @@
     },
     "condition": {
       "requestDomains": [
+        "fortnight.space",
+        "fortnitechat.site",
         "forum.ero-advertising.com",
         "forums.data2.ero-advertising.com",
         "forums.ero-advertising.com",
@@ -1676,9 +1678,7 @@
         "logs.hotstar.com",
         "logs.netflix.com",
         "logs1407.xiti.com",
-        "logs1413.xiti.com",
-        "logserver.insight.ucweb.com",
-        "logssug.ucweb.com"
+        "logs1413.xiti.com"
       ],
       "domainType": "thirdParty",
       "resourceTypes": [
@@ -1703,6 +1703,8 @@
     },
     "condition": {
       "requestDomains": [
+        "logserver.insight.ucweb.com",
+        "logssug.ucweb.com",
         "logu.hpplay.cn",
         "logx.optimizely.com",
         "londontea.net",
@@ -1943,6 +1945,7 @@
         "ox-rtb-us-east4.openx.net",
         "p.s.360.cn",
         "p.vtracy.de",
+        "pa.diffgremio.com",
         "packsdechicas.online",
         "pagepeel.ero-advertising.com",
         "paleoleap.usesfathom.com",
@@ -2050,6 +2053,7 @@
         "psserviceonline.com",
         "pub.axiatraders.com",
         "pub.trads.io",
+        "pubadx.one",
         "public.servenobid.com",
         "publishers.speakol.com",
         "pubmatic.com",
@@ -2098,11 +2102,7 @@
         "resumersvo.fun",
         "retrak.co.ke",
         "revcontent.com",
-        "reviewmygov.tuquy.com",
-        "rfihub.com",
-        "rjmwqf.com",
-        "rkv1.com",
-        "rlcdn.com"
+        "reviewmygov.tuquy.com"
       ],
       "domainType": "thirdParty",
       "resourceTypes": [
@@ -2127,6 +2127,10 @@
     },
     "condition": {
       "requestDomains": [
+        "rfihub.com",
+        "rjmwqf.com",
+        "rkv1.com",
+        "rlcdn.com",
         "rmagent.xyz",
         "roboinside.me",
         "roksa.sx",
@@ -2522,11 +2526,7 @@
         "udm.scorecardresearch.com",
         "uj3wazyk5u4hnvtk.onion.pet",
         "uk.thor.rtk.io",
-        "uk2.thor.rtk.io",
-        "ukcoffe.com",
-        "ultraeventgroup.com",
-        "umbs.ero-advertising.com",
-        "unclebillswv.com"
+        "uk2.thor.rtk.io"
       ],
       "domainType": "thirdParty",
       "resourceTypes": [
@@ -2551,6 +2551,10 @@
     },
     "condition": {
       "requestDomains": [
+        "ukcoffe.com",
+        "ultraeventgroup.com",
+        "umbs.ero-advertising.com",
+        "unclebillswv.com",
         "undertone.com",
         "unityads.unity3d.com",
         "unlimitedteacup.com",
@@ -2946,11 +2950,7 @@
         "www.nl2.ero-advertising.com",
         "www.nners.ero-advertising.com",
         "www.oata.ero-advertising.com",
-        "www.opads.ero-advertising.com",
-        "www.org-upgrade.com",
-        "www.orion.iad.appboy.com",
-        "www.packsdechicas.online",
-        "www.pagepeel.ero-advertising.com"
+        "www.opads.ero-advertising.com"
       ],
       "domainType": "thirdParty",
       "resourceTypes": [
@@ -2975,6 +2975,10 @@
     },
     "condition": {
       "requestDomains": [
+        "www.org-upgrade.com",
+        "www.orion.iad.appboy.com",
+        "www.packsdechicas.online",
+        "www.pagepeel.ero-advertising.com",
         "www.pamsg.online",
         "www.pata.ero-advertising.com",
         "www.performanceadexchange.com",

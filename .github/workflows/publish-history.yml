@@ -1,23 +1,66 @@
-name: Publicar histórico de versões
+name: Verificar extensão e publicar versões
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'review/**']
     paths:
       - '.github/release-history.json'
       - '.github/scripts/publish_history.py'
       - '.github/workflows/publish-history.yml'
+      - '.github/scripts/check_packages.py'
+      - 'extension/**'
+      - 'package.json'
+      - 'packages/**'
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: navega-livre-release-history
+  group: navega-livre-release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Obter o commit público exato
+        shell: bash
+        run: |
+          git init --quiet
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git fetch --quiet --depth=1 origin "${GITHUB_SHA}"
+          git checkout --quiet --detach FETCH_HEAD
+      - name: Conferir publicador, testes locais e pacotes
+        run: |
+          python3 -m unittest discover -s .github/tests -v
+          npm test
+          npm run build:chromium
+          npm run build:firefox
+          python3 .github/scripts/check_packages.py
+      - name: Preparar ferramentas oficiais de teste
+        run: |
+          npm install --prefix "$RUNNER_TEMP/navega-qa" --no-audit --no-fund playwright@1.64.0
+          "$RUNNER_TEMP/navega-qa/node_modules/.bin/playwright" install --with-deps chromium
+          python3 -m pip install --disable-pip-version-check selenium==4.51.0
+      - name: Testar extensão instalada no Chromium
+        env:
+          NAVEGA_QA_MODULES: ${{ runner.temp }}/navega-qa/node_modules
+          NAVEGA_EXTENSION_DIR: dist/chromium
+        run: |
+          node extension/tests/browser.e2e.cjs
+          node extension/tests/pages.e2e.cjs
+      - name: Testar extensão instalada no Firefox
+        env:
+          NAVEGA_EXTENSION_DIR: dist/firefox
+        run: |
+          printf '%s\n' '127.0.0.1 reader.navega.test news.navega.test video.navega.test normal.navega.test ad.a-ads.com' | sudo tee -a /etc/hosts >/dev/null
+          python3 extension/tests/firefox.e2e.py
   publish:
+    needs: verify
+    permissions:
+      contents: write
     if: github.repository == 'RexJohnson679/navega-livre' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10

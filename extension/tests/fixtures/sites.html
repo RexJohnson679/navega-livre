@@ -1,0 +1,20 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Fixture Navega Livre</title>
+<style>body{font:16px sans-serif;padding:24px}.card{padding:12px;margin:10px;border:1px solid #888}#floating{position:fixed;right:0;bottom:0;width:250px;height:120px;background:#ccc}#veil{position:fixed;inset:0;z-index:999999;background:transparent;opacity:0;display:none}</style></head><body>
+<header id="header">Cabeçalho e busca <input aria-label="Buscar" id="search"></header>
+<article id="reader" class="card">Conteúdo normal: notícia, capítulo ou vídeo.<a id="chapter" href="/normal">Próximo capítulo</a></article>
+<div id="floating"><ins class="pubadx-slot" data-zoneid="fixture">Publicidade flutuante</ins><button aria-label="Fechar">×</button></div>
+<div class="ad-slot" id="banner">Publicidade de página</div>
+<iframe id="adframe" src="http://ad.a-ads.com:__PORT__/ad"></iframe>
+<iframe id="normalframe" src="/frame"></iframe>
+<button id="attack" onclick="window.attackResult=open('https://unexpected.navega.test/','_blank')">Tentar pop-up</button>
+<a id="hijack" href="/normal" onclick="window.attackResult=open('https://unexpected.navega.test/');return false">Clique com anúncio extra</a>
+<div id="background" class="card" onclick="window.attackResult=open('https://unexpected.navega.test/')">Área da página</div>
+<button id="known-ad" onclick="window.attackResult=open('https://demand.pubadx.one/click')">Popunder de rede conhecida</button>
+<a id="normal-link" href="/normal" target="_blank">Abrir link escolhido</a>
+<button id="share" onclick="const u=new URL('/normal',location.href);u.hostname='normal.navega.test';open(u.href,'share')">Compartilhar</button>
+<button id="bait" onclick="window.baitResult=confirm('Instale Ad Blocker Premium para desbloquear o conteúdo.')">Diálogo falso</button>
+<button id="normal-dialog" onclick="window.normalDialogResult=confirm('Excluir o comentário?')">Confirmação normal</button>
+<button id="insert" onclick="const x=document.createElement('div');x.id='dynamic';x.className='ad-container';x.textContent='Anúncio dinâmico';document.body.append(x)">Inserir anúncio dinâmico</button>
+<a id="veil" href="https://unexpected.navega.test/" target="_blank"></a>
+<script>window.attackResult='not-called';setTimeout(()=>window.automaticResult=open('https://unexpected.navega.test/'),20);</script>
+</body></html>

@@ -2,112 +2,63 @@
 
 Extensão para navegadores focada em redução local de anúncios, ajustes no YouTube e reparo de avisos de adblock.
 
-**Versão 0.3.1 · Manifest V3 · Licença MIT**
+**Versão 0.4.0 · Manifest V3 · Licença MIT**
 
-O projeto reúne um núcleo compartilhado e builds próprios para Chromium e Firefox. As preferências e os filtros funcionam localmente, com controles para pausar a proteção por domínio, ajustar o YouTube e exportar um diagnóstico quando solicitado.
+## O que mudou na 0.4.0
 
-## Correção 0.3.1
+- Proteção de pop-ups no início da página: bloqueia aberturas automáticas, destinos publicitários conhecidos e uma aba extra que não corresponde ao link clicado.
+- Bloqueio de links invisíveis que cobrem a tela e de diálogos falsos exigindo instalar outro bloqueador.
+- Fechamento de abas publicitárias originadas por uma página protegida, incluindo uma aba inicialmente vazia que redireciona logo depois. Abas existentes e endereços digitados por você não são alvos desse mecanismo.
+- Filtros para slots PubADX, A-Ads, anúncios flutuantes, imagens e frames publicitários. As partes úteis da página e controles de fechar comuns são preservados.
+- Inclusão das redes observadas `pubadx.one`, `diveinthebluesky.biz`, `pa.diffgremio.com` e `acscdn.com`. O bloqueio de rede e os filtros de elementos usam o mesmo catálogo local.
+- Controle separado para pop-ups, contadores locais e pausa por site. São 3.063 domínios nas listas: 3.003 de publicidade/conexões indesejadas e 60 de rastreamento.
 
-Corrigida a chamada de atualização do script do player para a API documentada `scripting.updateContentScripts`. A versão anterior usava um nome inexistente, que causava a mensagem de erro mostrada no painel. A atualização evita registros repetidos sem necessidade e pode substituir o registro pelas APIs de remover/registrar quando o método de atualização não estiver disponível. O painel também reconhece o filtro antigo em abas já abertas. Esta correção não confirma remoção de todos os anúncios de vídeo; reprodução real ainda precisa ser validada.
+Os ajustes do player e o reparo opcional de avisos continuam presentes. Os filtros não alteram login, assinatura ou permissões de acesso concedidas pelo servidor.
 
-## Funcionalidades
+## Instalar ou atualizar
 
-- Bloqueio de conexões para destinos conhecidos de publicidade, rastreamento e outros conteúdos indesejados: 3.059 domínios distintos nas listas locais.
-- Lista adicional de rastreadores que pode ser desligada independentemente.
-- Ocultação de espaços publicitários conhecidos, inclusive na interface do YouTube.
-- Filtro experimental de metadados publicitários do player em dados iniciais e respostas `fetch` e `XMLHttpRequest` de endpoints específicos do YouTube.
-- Clique no botão de pular quando disponível e silenciamento opcional, com restauração do áudio anterior.
-- Ajuste opcional por domínio para avisos explícitos de bloqueador.
-- Pausa global e por site, incluindo respeito à pausa da página principal em iframes.
-- Painel com abas, navegação por teclado e estado de carregamento dos filtros.
-- Diagnóstico local sem caminho, parâmetros ou fragmento da URL.
+Baixe o pacote do seu navegador em [Releases](https://github.com/RexJohnson679/navega-livre/releases/latest). O [histórico](CHANGELOG.md) mantém os pacotes anteriores e suas limitações.
 
-Os ajustes do YouTube são experimentais: anúncios de vídeo podem permanecer. O reparo de avisos depende de cada site e não modifica login, assinaturas ou autorização do servidor. As listas são snapshots locais, sem atualização remota automática. Consulte o [relatório da versão](extension/RELATORIO.md).
-
-## Instalar
-
-Os pacotes também estão em [Releases](https://github.com/RexJohnson679/navega-livre/releases), com notas de cada versão. Veja o [histórico das mudanças](CHANGELOG.md). As versões antigas são arquivos retrospectivos; a recomendada entre os pacotes preservados é a 0.3.1.
-
-Não é necessário Node para instalar os pacotes prontos.
-
-| Pacote | Navegadores | Mínimo declarado |
+| Pacote | Navegadores | Mínimo |
 | --- | --- | --- |
-| [Chromium 0.3.1](packages/navega-livre-chromium-v0.3.1.zip) | Chrome; Edge e Brave compatíveis com as APIs usadas | Chromium 120 |
-| [Firefox 0.3.1](packages/navega-livre-firefox-v0.3.1.zip) | Firefox para computador | Firefox 128 |
+| [Chromium 0.4.0](packages/history/v0.4.0/navega-livre-chromium-v0.4.0.zip) | Chrome, Edge e Brave compatíveis com as APIs usadas | Chromium 120 |
+| [Firefox 0.4.0](packages/history/v0.4.0/navega-livre-firefox-v0.4.0.zip) | Firefox para computador | Firefox 128 |
 
-Baixe o arquivo pelo botão de download na página do ZIP e extraia-o. Use uma só cópia do Navega Livre em cada navegador.
+**Chrome, Edge e Brave:** extraia o ZIP, abra a página de extensões, ative o modo de desenvolvedor e escolha “Carregar sem compactação”. Selecione a pasta `navega-livre`, onde está `manifest.json`. Para atualizar, substitua os arquivos da pasta instalada e recarregue a extensão. Não mantenha duas versões carregadas.
 
-### Chrome, Edge e Brave
+**Firefox:** extraia o pacote Firefox. Abra `about:debugging#/runtime/this-firefox`, escolha “Carregar extensão temporária” e selecione `manifest.json`. A instalação temporária termina ao reiniciar o navegador; distribuição permanente exige assinatura pela Mozilla.
 
-1. Abra `chrome://extensions`, `edge://extensions` ou `brave://extensions`.
-2. Ative **Modo do desenvolvedor**.
-3. Escolha **Carregar sem compactação** e selecione a pasta `navega-livre` extraída.
-4. Recarregue os sites abertos. Para o YouTube, feche as abas antigas e abra uma nova.
+A 0.4.0 declara `webNavigation` para identificar a origem de abas publicitárias. Confira as permissões da atualização. Feche as abas antigas dos sites e abra novas, ou recarregue-as, para carregar os scripts novos.
 
-### Firefox
+## Controles
 
-1. Abra `about:debugging#/runtime/this-firefox`.
-2. Escolha **Carregar extensão temporária**.
-3. Selecione o `manifest.json` do pacote Firefox extraído.
-4. Abra uma nova aba do YouTube e confira os estados de rede e player no painel.
+- **Ativar proteção neste site:** pausa rede, anúncios visuais e pop-ups para aquele hostname, também nos iframes da página.
+- **Bloquear pop-ups e abas indesejadas:** controla a proteção de abertura de janelas, links publicitários e diálogos falsos. Desligue temporariamente se um botão legítimo de um site depender de uma abertura que foi bloqueada.
+- **Ocultar espaços de anúncios:** controla apenas os filtros visuais. Ao desligar, os elementos ocultados voltam.
+- **YouTube:** filtros de dados do player, ocultação de espaços, botão de pular quando disponível e opção de silenciar anúncios. O painel detecta abas que ainda têm o filtro antigo.
+- **Tentar liberar aviso:** ajuste opcional de avisos de bloqueador nos sites compatíveis.
 
-A instalação temporária termina ao reiniciar o Firefox. Instalação permanente exige um pacote assinado pela Mozilla; esta versão não foi publicada em lojas.
+Nenhum bloqueador garante eliminar todos os formatos de publicidade. Scripts, domínios e layouts podem mudar; permissões, outras extensões e a versão do navegador também influenciam o resultado. O bloqueio não considera todo link externo um anúncio: links escolhidos e botões explícitos de autenticação, compartilhamento e impressão são preservados.
 
-O [guia completo](extension/LEIA-ME.md) explica atualizações, controles e diagnóstico. A [política de privacidade](extension/PRIVACIDADE.md) descreve as permissões e os dados utilizados.
+## Privacidade e filtros
 
-## Estrutura
+Preferências, filtros e processamento ficam no navegador. Sem telemetria, servidor próprio, anúncios próprios ou código remoto. O diagnóstico exportado pelo painel contém origem do site e contadores; não inclui caminho da página, parâmetros, cookies ou respostas do player.
 
-| Caminho | Conteúdo |
-| --- | --- |
-| `extension/manifest.json` | Manifesto Chromium da origem; o build gera o manifesto Firefox. |
-| `extension/background.js` | Preferências, listas de rede, registro do filtro e diagnóstico. |
-| `extension/common.js`, `filter-info.js` | Configuração compartilhada e resumo dos filtros. |
-| `extension/content.js`, `cosmetic.css` | Ocultação de anúncios, controles do player e ajustes de avisos. |
-| `extension/youtube-main.js`, `youtube-bridge.js` | Filtro no ambiente da página e comunicação de preferências. |
-| `extension/popup.*` | Interface do painel. |
-| `extension/rules/`, `filters/` | Regras locais, catálogo, snapshot e atribuição. |
-| `extension/icons/` | Ícones da extensão. |
-| `extension/scripts/`, `tests/` | Build e testes automatizados. |
-| `packages/` | ZIPs instaláveis para cada navegador. |
+Veja [PRIVACIDADE.md](extension/PRIVACIDADE.md), [origem dos filtros](extension/filters/LEIA-ME.md) e [relatório de validação](extension/RELATORIO.md). O snapshot de contribuições de StevenBlack/hosts conserva sua licença. As listas empacotadas não são a coleção completa do uBlock Origin ou EasyList.
 
-## Desenvolvimento
+## Desenvolvimento e validação
 
-Node 20+ para executar os testes e gerar pacotes. O código de funcionamento não depende de pacotes npm externos.
+Requer Node.js 20 ou mais recente. A extensão não depende de pacotes externos em tempo de execução.
 
 ```sh
 npm test
 npm run build:chromium
 npm run build:firefox
+python3 .github/scripts/check_packages.py
 ```
 
-Os builds ficam em `dist/chromium` e `dist/firefox`. Selecione a pasta correspondente para carregar a extensão no navegador. As saídas e `node_modules` ficam fora do Git.
+59 testes locais cobrem preferências, pausa, rede, registro de scripts, player, iframes, cosméticos, pop-ups, diálogos e diagnóstico. O fluxo do GitHub Actions exige testes com a extensão instalada em Chromium e Firefox antes de publicar um lançamento. As páginas desses testes são controladas e simulam sites de leitura, notícias e vídeo, com anúncios de redes e cliques de tipos diferentes; não são uma medição de todos os sites reais nem uma pontuação em benchmarks.
 
-Comandos equivalentes:
+Os testes de navegador usam Playwright 1.64.0 e Selenium 4.51.0 em perfis descartáveis. Não acessam contas nem instalam a extensão no navegador de quem usa o projeto. Resultados e falhas ficam em [Actions](https://github.com/RexJohnson679/navega-livre/actions).
 
-```sh
-node extension/scripts/test.cjs
-node extension/scripts/build.cjs chromium dist/chromium
-node extension/scripts/build.cjs firefox dist/firefox
-```
-
-Para revisar filtros, edite o catálogo ou snapshot, preserve a atribuição e licença, gere as regras novamente e execute os testes. Veja [origem dos filtros](extension/filters/LEIA-ME.md).
-
-## Validação
-
-42 testes simulados passaram na revisão 0.3.1. Também foram verificadas a sintaxe, a estrutura dos manifestos, os caminhos e a integridade dos ZIPs. Os testes cobrem preferências, pausa, iframes, restauração do áudio, filtragem e preservação de dados do player, diagnóstico e geração dos dois builds.
-
-Instalação real em Chromium/Firefox, aparência do painel, reprodução no YouTube real e nova pontuação em testes de bloqueio ainda precisam de confirmação. Uma porcentagem de benchmark não representa remoção de todos os anúncios.
-
-O teste adicional de Chromium com páginas simuladas exige Playwright e seu navegador:
-
-```sh
-npm install --no-save playwright
-npx playwright install chromium
-node extension/tests/browser.e2e.cjs
-```
-
-Esse teste adicional está preparado e não foi executado no ambiente da revisão. Para informar um problema, inclua navegador/versão, tipo de anúncio e o diagnóstico exportado pelo painel, após conferir seu conteúdo.
-
-## Licença
-
-O projeto está sob a [licença MIT](LICENSE). O snapshot de contribuições do Steven Black também usa MIT e mantém sua [licença e atribuição próprias](extension/filters/LICENSE-StevenBlack.txt).
+O catálogo de lançamentos em `.github/release-history.json` registra notas, commits e checksums. ZIPs antigos são preservados; a publicação da versão atual depende da validação dos arquivos e dos navegadores.

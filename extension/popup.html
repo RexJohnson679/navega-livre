@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Navega Livre</title><link rel="stylesheet" href="popup.css"></head>
 <body>
-  <header><span class="logo"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3 27 7v9c0 7-11 13-11 13S5 23 5 16V7Z" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="m10 16 4 4 8-9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></span><div><h1>Navega Livre</h1><p>Menos anúncios. Mais controle.</p></div><span id="version" class="version">0.3.1</span></header>
+  <header><span class="logo"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3 27 7v9c0 7-11 13-11 13S5 23 5 16V7Z" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="m10 16 4 4 8-9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></span><div><h1>Navega Livre</h1><p>Menos anúncios. Mais controle.</p></div><span id="version" class="version">0.4.0</span></header>
   <main>
     <section class="site-card"><div class="eyebrow">NESTE SITE</div><div class="site-line"><strong id="hostname">Carregando…</strong><span id="status" class="pill">…</span></div><label class="row"><span>Ativar proteção neste site</span><input id="siteEnabled" type="checkbox" class="switch" disabled></label></section>
     <p id="networkState" class="engine-state" role="status">Verificando o bloqueio de rede…</p>
@@ -15,7 +15,9 @@
     <section id="panel-general" class="settings" role="tabpanel" aria-labelledby="tab-general">
       <label class="row"><span>Bloqueio geral<small>Publicidade e conexões indesejadas</small></span><input id="enabled" type="checkbox" class="switch"></label>
       <label class="row"><span>Bloquear rastreadores<small>Lista adicional de análise e rastreamento</small></span><input id="privacy" type="checkbox" class="switch"></label>
+      <label class="row"><span>Bloquear pop-ups e abas indesejadas<small>Protege cliques e bloqueia pedidos falsos de instalação</small></span><input id="popups" type="checkbox" class="switch"></label>
       <label class="row"><span>Ocultar espaços de anúncios<small>Desligue se um elemento do site sumir</small></span><input id="cosmetics" type="checkbox" class="switch"></label>
+      <p id="popupState" class="engine-state" role="status">Verificando a proteção de abas…</p>
     </section>
     <section id="panel-youtube" class="settings" role="tabpanel" aria-labelledby="tab-youtube" hidden>
       <label class="row"><span>Ajustes do YouTube<small>Filtrar dados publicitários e espaços de anúncios</small></span><input id="youtube" type="checkbox" class="switch"></label>

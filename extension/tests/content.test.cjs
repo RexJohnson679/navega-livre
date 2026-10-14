@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
 const C = require('../common.js');
+const P = require('../popup-policy.js');
 const source = fs.readFileSync(path.join(__dirname, '../content.js'), 'utf8');
 class Style {
   constructor(){this.values={};this.priorities={};}
@@ -37,7 +38,7 @@ async function fixture(host, config, selectors={}, options={}) {
   const events=[];let observing=false;
   const document={documentElement,body,querySelectorAll:s=>selectors[s]||[],querySelector:s=>(selectors[s]||[])[0]||null,createElement:()=>new Node(),addEventListener(){},dispatchEvent(event){events.push(event);}};
   const api={storage:{local:{get:async()=>({config})},onChanged:{addListener:fn=>changed=fn}},runtime:{onMessage:{addListener:fn=>message=fn},sendMessage:async data=>(sent.push(data),data.type==='FRAME_CONTEXT'?{ok:true,host:options.topHost}:{ok:true,repaired:true})}};
-  const context=vm.createContext({NavegaCore:C,URL,location:{hostname:host,href:'https://'+host+'/'},document,
+  const context=vm.createContext({NavegaCore:C,NavegaPopupPolicy:P,URL,location:{hostname:host,href:'https://'+host+'/'},document,
     getComputedStyle:node=>({display:node.hasAttribute('data-navega-livre-hidden')?'none':'block',visibility:'visible',position:node.position}),
     MutationObserver:class{observe(){observing=true;}disconnect(){observing=false;}},setTimeout:()=>1,clearTimeout(){},setInterval:fn=>(interval=fn,1),clearInterval:()=>interval=null,
     Date:{now:()=>now},addEventListener(){},console,CustomEvent:class{constructor(type,options){this.type=type;this.detail=options?.detail}},
@@ -110,7 +111,31 @@ test('frame cosmetics validate the source hostname instead of matching text anyw
   ad.setAttribute('src','https://pagead2.googlesyndication.com/ad');
   lookalike.setAttribute('src','https://doubleclick.net.attacker.test/');
   query.setAttribute('src','https://example.test/?doubleclick.net');
-  await fixture('page.test',C.normalizeConfig(),{'iframe[src]':[ad,lookalike,query]});
+  await fixture('page.test',C.normalizeConfig(),{'iframe[src],img[src],a[href],embed[src],object[data]':[ad,lookalike,query]});
   assert.equal(ad.hasAttribute('data-navega-livre-hidden'),true);
   assert.equal(lookalike.hasAttribute('data-navega-livre-hidden'),false);assert.equal(query.hasAttribute('data-navega-livre-hidden'),false);
+});
+test('PubADX floaters collapse their close-button wrapper while the reader and page header remain visible',async()=>{
+  const slot=new Node(),close=new Node({text:'×',matches:['button']}),floater=new Node({position:'fixed'});
+  floater.children=[slot,close];slot.parentElement=floater;
+  const banner=new Node(),article=new Node({matches:['article']}),header=new Node({matches:['header']});
+  banner.parentElement=article;article.children=[banner,header];
+  const settings=C.normalizeConfig();
+  const f=await fixture('lycantoons.com',settings,{'ins.pubadx-slot':[slot],'.ad-slot':[banner]});
+  assert.equal(slot.hasAttribute('data-navega-livre-hidden'),true);assert.equal(floater.hasAttribute('data-navega-livre-hidden'),true);
+  assert.equal(article.hasAttribute('data-navega-livre-hidden'),false);assert.equal(header.hasAttribute('data-navega-livre-hidden'),false);
+  await f.change({...settings,cosmetics:false});
+  assert.equal(slot.hasAttribute('data-navega-livre-hidden'),false);assert.equal(floater.hasAttribute('data-navega-livre-hidden'),false);
+});
+test('news, reader and video pages hide advertising frames, images and links from the shared catalog',async()=>{
+  for(const host of ['news.example','reader.example','video.example']) {
+    const frame=new Node(),image=new Node(),link=new Node(),chapter=new Node(),captcha=new Node();
+    frame.setAttribute('src','https://ad.a-ads.com/slot');image.setAttribute('src','https://imp9.pubadx.one/ad');
+    link.setAttribute('href','https://demand.pubadx.one/click');chapter.setAttribute('href','/chapter/1');
+    captcha.setAttribute('src','https://www.google.com/recaptcha/api2/aframe');
+    const f=await fixture(host,C.normalizeConfig(),{'iframe[src],img[src],a[href],embed[src],object[data]':[frame,image,link,chapter,captcha]});
+    for(const node of [frame,image,link])assert.equal(node.hasAttribute('data-navega-livre-hidden'),true);
+    for(const node of [chapter,captcha])assert.equal(node.hasAttribute('data-navega-livre-hidden'),false);
+    await f.change(C.normalizeConfig({disabledHosts:[host]}));for(const node of [frame,image,link])assert.equal(node.hasAttribute('data-navega-livre-hidden'),false);
+  }
 });

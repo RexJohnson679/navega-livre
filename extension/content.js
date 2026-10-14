@@ -1,6 +1,7 @@
 (() => {
   'use strict';
   const C = globalThis.NavegaCore;
+  const P = globalThis.NavegaPopupPolicy;
   if (!C) return;
   const HOST = location.hostname.toLowerCase();
   const HIDDEN = 'data-navega-livre-hidden';
@@ -14,7 +15,10 @@
   const COMMON_SELECTORS = ['ins.adsbygoogle', '.google-auto-placed',
     '[data-ad-slot][data-ad-client]', '[id^="div-gpt-ad"]',
     '.ad-banner', '.ad-container', '.advertisement', '.adsbox', '.textads',
-    '.OUTBRAIN[data-widget-id]'];
+    '.OUTBRAIN[data-widget-id]', 'ins.pubadx-slot', '.pubadx-offer',
+    '.ad-slot', '.ad-unit', '.ad-placement', '.ad-wrapper', '.ad-overlay', '.ad-popup',
+    '.ads-banner', '.ads-container', '.adsbyexoclick', '.exo-native-widget', '.adsterra-banner',
+    '[data-ad-unit]', '[data-ad-format]', '[data-ad-manager-id]', '[id^="google_ads_iframe"]'];
   const SKIP_SELECTORS = ['.ytp-ad-skip-button', '.ytp-ad-skip-button-modern', '.ytp-skip-ad-button'];
   const GATE_SELECTORS = '[role="dialog"],dialog,[class*="adblock" i],[id*="adblock" i],[class*="anti-adblock" i]';
   const browserApi = typeof browser !== 'undefined' ? browser : chrome;
@@ -31,11 +35,28 @@
   function active() { return frameReady && C.active(settings, HOST) && C.active(settings, topHost); }
 
   function hide(node, kind) {
-    if (!node || node.hasAttribute(HIDDEN)) return;
+    if (!node || node === document.body || node === document.documentElement || node.id === 'root' || node.id === '__next' || node.hasAttribute(HIDDEN)) return;
     node.setAttribute(HIDDEN, kind);
     hiddenNodes.add(node);
     if (kind === 'notice') stats.noticesHidden++;
     else if (!countedAds.has(node)) { countedAds.add(node); stats.adsHidden++; }
+  }
+
+  function hideAd(node) {
+    hide(node, 'ad');
+    // Collapse an otherwise empty floating wrapper, including its close button.
+    // Never climb into article, reader, navigation or app containers.
+    let child = node;
+    for (let depth = 0; depth < 3; depth++) {
+      const parent = child?.parentElement;
+      if (!parent || parent === document.body || parent === document.documentElement ||
+          parent.matches('main,article,nav,header,footer,[role="main"],#root,#__next')) break;
+      const onlyAd = [...parent.children].every(sibling => sibling === child || sibling.matches('script,style,link') ||
+        (sibling.matches('button,[role="button"]') && /^(?:\s*|[×✕x]|close|fechar)$/i.test(sibling.textContent.trim())));
+      if (!onlyAd) break;
+      if (getComputedStyle(parent).position === 'fixed') { hide(parent, 'ad'); break; }
+      child = parent;
+    }
   }
 
   function unmute() {
@@ -125,10 +146,10 @@
     pending = null;
     if (!ready || !active() || !document.body) return;
     if (settings.cosmetics) {
-      for (const selector of COMMON_SELECTORS) for (const node of document.querySelectorAll(selector)) hide(node, 'ad');
-      for (const node of document.querySelectorAll('iframe[src]')) try {
-        const host = new URL(node.getAttribute('src'), location.href).hostname;
-        if (['doubleclick.net', 'googlesyndication.com', 'googleadservices.com'].some(root => host === root || host.endsWith('.' + root))) hide(node, 'ad');
+      for (const selector of COMMON_SELECTORS) for (const node of document.querySelectorAll(selector)) hideAd(node);
+      for (const node of document.querySelectorAll('iframe[src],img[src],a[href],embed[src],object[data]')) try {
+        const value = node.getAttribute('src') || node.getAttribute('href') || node.getAttribute('data');
+        if (P?.adUrl(value, location.href)) hideAd(node);
       } catch { /* Non-HTTP and invalid frame sources stay untouched. */ }
     }
     if (C.youtubeHost(HOST) && settings.youtube) youtube(); else unmute();
@@ -153,7 +174,8 @@
     if (timer) clearInterval(timer);
     timer = null;
     if (active()) {
-      observer.observe(document.documentElement, {childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'src']});
+      if (document.documentElement) observer.observe(document.documentElement, {childList: true, subtree: true, attributes: true,
+        attributeFilter: ['class', 'src', 'href', 'id', 'style', 'data-zoneid', 'data-ad-slot', 'data-ad-unit', 'data-ad-client']});
       scan();
       // Ordinary sites are scanned on DOM changes; only player/notice handling needs a heartbeat.
       if ((C.youtubeHost(HOST) && settings.youtube) || settings.repairHosts.includes(HOST)) timer = setInterval(scan, 900);
@@ -161,6 +183,7 @@
   }
 
   const observer = new MutationObserver(schedule);
+  document.addEventListener('DOMContentLoaded', () => { if (ready) setSettings(settings); });
   document.addEventListener('yt-navigate-finish', schedule);
   if (!frameReady) browserApi.runtime.sendMessage({type: 'FRAME_CONTEXT'}).then(result => {
     if (!result?.ok || !result.host) return;

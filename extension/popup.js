@@ -2,7 +2,7 @@
 const C = NavegaCore;
 const api = typeof browser !== 'undefined' ? browser : chrome;
 const $ = id => document.getElementById(id);
-let tab = null, settings = C.normalizeConfig(), page = null, busy = false, refreshing = false, youtubeDiagnostic = null, network = null;
+let tab = null, settings = C.normalizeConfig(), page = null, busy = false, refreshing = false, youtubeDiagnostic = null, popupDiagnostic = null, network = null;
 const tabNames = ['general', 'youtube', 'repair'];
 function selectPanel(name, focus = false) {
   for (const item of tabNames) {
@@ -38,7 +38,7 @@ function render() {
   $('siteEnabled').checked = host && !settings.disabledHosts.includes(host);
   $('siteEnabled').disabled = !host || busy;
   for (const key of C.OPTIONS) { $(key).checked = settings[key]; $(key).disabled = busy; }
-  for (const key of ['privacy', 'cosmetics', 'youtube']) $(key).disabled = busy || !settings.enabled;
+  for (const key of ['privacy', 'cosmetics', 'popups', 'youtube']) $(key).disabled = busy || !settings.enabled;
   for (const key of ['skipAds', 'muteAds']) $(key).disabled = busy || !settings.enabled || !settings.youtube;
   $('autoRepair').checked = settings.repairHosts.includes(host);
   $('autoRepair').disabled = !on || busy;
@@ -46,6 +46,19 @@ function render() {
   $('reload').disabled = !host || busy;
   $('hiddenCount').textContent = page ? String(page.adsHidden || 0) : '—';
   $('skipCount').textContent = page ? String(page.skipClicks || 0) : '—';
+  const popupStatus = $('popupState');
+  popupStatus.classList.remove('error');
+  if (!on || !settings.popups) popupStatus.textContent = 'Proteção de abas pausada aqui.';
+  else if (popupDiagnostic?.registration?.error || popupDiagnostic?.error) {
+    popupStatus.textContent = 'Falha na proteção de abas: ' + (popupDiagnostic.registration?.error || popupDiagnostic.error);
+    popupStatus.classList.add('error');
+  } else if (!popupDiagnostic) popupStatus.textContent = 'Verificando a proteção de abas…';
+  else if (!popupDiagnostic.main?.installed || (popupDiagnostic.main.version && popupDiagnostic.main.version !== popupDiagnostic.expectedVersion)) {
+    popupStatus.textContent = 'Recarregue esta página para iniciar a proteção de abas atual.';
+  } else {
+    const main = popupDiagnostic.main;
+    popupStatus.textContent = `Proteção carregada · ${main.popupsBlocked + (popupDiagnostic.tabsClosed || 0)} aberturas bloqueadas · ${main.linksBlocked} links publicitários · ${main.dialogsBlocked} avisos falsos.`;
+  }
   const networkLabel = $('networkState');
   networkLabel.classList.toggle('error', Boolean(network?.error));
   if (network?.error) networkLabel.textContent = 'Falha no bloqueio de rede: ' + network.error;
@@ -82,6 +95,10 @@ async function refreshPage() {
   refreshing = true;
   try {
   await request({type: 'GET_CONFIG'});
+  if (C.normalizeHost(tab?.url || '')) {
+    try { popupDiagnostic = await request({type: 'GET_POPUP_DIAGNOSTIC', tabId: tab.id}); }
+    catch (error) { popupDiagnostic = {error: error.message}; }
+  } else popupDiagnostic = null;
   try { page = await api.tabs.sendMessage(tab.id, {type: 'PAGE_STATUS'}, {frameId: 0}); }
   catch { page = null; }
   if (C.youtubeHost(tab?.url || '')) {
@@ -136,9 +153,9 @@ $('report').addEventListener('click', () => run(async () => {
     extension: 'Navega Livre', version: api.runtime.getManifest().version,
     target: api.runtime.getManifest().browser_specific_settings ? 'firefox' : 'chromium',
     page: safeUrl ? safeUrl.origin : 'não suportada',
-    settings: {enabled: settings.enabled, privacy: settings.privacy, cosmetics: settings.cosmetics, youtube: settings.youtube, skipAds: settings.skipAds, muteAds: settings.muteAds,
+    settings: {enabled: settings.enabled, privacy: settings.privacy, cosmetics: settings.cosmetics, popups: settings.popups, youtube: settings.youtube, skipAds: settings.skipAds, muteAds: settings.muteAds,
       pausedHere: settings.disabledHosts.includes(safeUrl?.hostname), repairHere: settings.repairHosts.includes(safeUrl?.hostname)},
-    counters: page, youtube: youtubeDiagnostic, network, filters: C.FILTER_INFO,
+    counters: page, youtube: youtubeDiagnostic, popups: popupDiagnostic, network, filters: C.FILTER_INFO,
     note: 'Contadores locais de interface; não representam pedidos bloqueados. Sem cookies, tokens, HTML, caminho ou parâmetros da URL.'
   };
   const url = URL.createObjectURL(new Blob([JSON.stringify(diagnostic, null, 2)], {type: 'application/json'}));

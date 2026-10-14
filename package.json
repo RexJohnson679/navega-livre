@@ -1,6 +1,6 @@
 {
   "name": "navega-livre",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "private": true,
   "license": "MIT",
   "description": "Extensão para navegadores focada em redução local de anúncios, ajustes no YouTube e reparo de avisos de adblock.",

@@ -1,13 +1,13 @@
 /* Run with Playwright installed: node tests/browser.e2e.cjs
  * All webpages are simulated with request interception; no real accounts.
  */
-const {chromium} = require(process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES
-  ? process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES + '/playwright' : 'playwright');
+const qaModules = process.env.NAVEGA_QA_MODULES || process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES;
+const {chromium} = require(qaModules ? qaModules + '/playwright' : 'playwright');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const ext = path.resolve(__dirname, '..');
+const ext = path.resolve(process.env.NAVEGA_EXTENSION_DIR || path.join(__dirname, '..'));
 const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'navega-test-'));
 const youtubeFixture = `<!doctype html><html><body>
   <article id="content">Vídeo normal</article><ytd-ad-slot-renderer id="ad">Publicidade</ytd-ad-slot-renderer>
@@ -34,7 +34,7 @@ const knownFixture = `<!doctype html><html><body>
   let context;
   try {
     context = await chromium.launchPersistentContext(profile, {
-      headless: true,
+      headless: true, channel: 'chromium',
       executablePath: chromium.executablePath(),
       args: ['--no-sandbox', '--disable-extensions-except=' + ext, '--load-extension=' + ext],
       viewport: {width: 1000, height: 850}, acceptDownloads: true
@@ -52,7 +52,7 @@ const knownFixture = `<!doctype html><html><body>
     worker.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
     await worker.evaluate(async () => {
       for (let i=0;i<100;i++) {
-        if ((await chrome.storage.local.get('config')).config && (await chrome.scripting.getRegisteredContentScripts({ids:['navega-youtube-main']})).length) return;
+        if ((await chrome.storage.local.get('config')).config && (await chrome.scripting.getRegisteredContentScripts({ids:['navega-youtube-main','navega-popup-main']})).length === 2) return;
         await new Promise(resolve => setTimeout(resolve, 25));
       }
       throw Error('Extension failed to initialize');

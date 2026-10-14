@@ -22,7 +22,7 @@ function blocked(url,initiator,type='script',rules=ads){
 }
 test('broad ad networks and trackers are covered, while video hosts and lookalikes remain available',()=>{
   const page='https://news.example/article';
-  for(const host of ['pagead2.googlesyndication.com','securepubads.g.doubleclick.net','ads.pubmatic.com','ib.adnxs.com','ads.taboola.com','cdn.bidswitch.net','adform.net']){
+  for(const host of ['pagead2.googlesyndication.com','securepubads.g.doubleclick.net','ads.pubmatic.com','ib.adnxs.com','ads.taboola.com','cdn.bidswitch.net','adform.net','platform.pubadx.one','ppo.diveinthebluesky.biz','pa.diffgremio.com','acscdn.com']){
     assert.equal(blocked('https://'+host+'/ad.js',page),true,host);
   }
   for(const host of ['www.google-analytics.com','cdn.segment.com','bat.bing.com','static.hotjar.com','cdn.heapanalytics.com','www.googletagmanager.com']){
@@ -55,10 +55,13 @@ test('both reproducible builds declare network permissions, early preferences an
     for(const target of ['chromium','firefox']){
       const out=path.join(temp,target);execFileSync(process.execPath,[path.join(root,'scripts/build.cjs'),target,out]);
       const manifest=JSON.parse(fs.readFileSync(path.join(out,'manifest.json')));
-      assert.equal(manifest.version,'0.3.1');assert.ok(manifest.permissions.includes('declarativeNetRequest'));
+      assert.equal(manifest.version,'0.4.0');assert.ok(manifest.permissions.includes('declarativeNetRequest'));
+      assert.ok(manifest.permissions.includes('webNavigation'));
       assert.deepEqual(manifest.declarative_net_request.rule_resources.map(r=>r.id),['advertising','privacy']);
       assert.equal(manifest.content_scripts[0].run_at,'document_start');assert.ok(manifest.content_scripts[0].js.includes('youtube-bridge.js'));
       assert.equal(manifest.content_scripts[1].all_frames,true);
+      assert.equal(manifest.content_scripts[1].run_at,'document_start');assert.ok(manifest.content_scripts[1].js.includes('popup-bridge.js'));
+      for(const name of ['filter-data.js','popup-policy.js','popup-main.js'])assert.ok(fs.existsSync(path.join(out,name)));
       assert.deepEqual(manifest.content_scripts[1].css,['cosmetic.css']);assert.ok(fs.existsSync(path.join(out,'cosmetic.css')));
       assert.equal(fs.readFileSync(path.join(out,'rules/advertising.json'),'utf8'),fs.readFileSync(path.join(root,'rules/advertising.json'),'utf8'));
       assert.ok(fs.existsSync(path.join(out,'filters/LICENSE-StevenBlack.txt')));

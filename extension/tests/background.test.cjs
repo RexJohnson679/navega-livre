@@ -4,29 +4,45 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
 const C = require('../common.js');
+const P = require('../popup-policy.js');
 async function workerFixture(options={}){
   let config=C.normalizeConfig(),rules=[],enabled=['advertising','privacy'],installed,message,changed,registered=options.registered||[];
-  const scriptCalls=[];
+  const scriptCalls=[],popupCalls=[],removed=[];
+  const events={};
+  const tabData=new Map([[7,{id:7,url:options.url||'https://example.test/path'}]]);
   const calls=[];const errors=[];
   const chrome={
     runtime:{getURL:p=>'chrome-extension://fixture/'+p,getManifest:()=>({version:C.FILTER_INFO.version}),onInstalled:{addListener:fn=>installed=fn},onStartup:{addListener(){}},onMessage:{addListener:fn=>message=fn}},
     storage:{local:{get:async()=>({config}),set:async data=>{config=data.config;changed?.({config:{newValue:config}},'local');}},onChanged:{addListener:fn=>changed=fn}},
     declarativeNetRequest:{getDynamicRules:async()=>rules,updateDynamicRules:async change=>{rules=change.addRules;calls.push(change);},updateEnabledRulesets:async change=>enabled=change.enableRulesetIds,getEnabledRulesets:async()=>{if(options.networkError)throw Error(options.networkError);return enabled;}},
     action:{setBadgeText:async()=>{},setBadgeBackgroundColor:async()=>{}},
-    tabs:{get:async id=>({id,url:options.url||'https://example.test/path'}),sendMessage:async()=>({noticesHidden:0})},
-    scripting:{executeScript:async({func})=>[{result:vm.runInNewContext('('+func.toString()+')()',options.mainState?{__navegaLivreYoutubeState:()=>options.mainState}:{})}],getRegisteredContentScripts:async()=>registered,
-      registerContentScripts:async scripts=>{if(options.registrationError)throw new Error(options.registrationError);scriptCalls.push('register');registered=scripts;},
-      updateContentScripts:async scripts=>{if(options.registrationError)throw new Error(options.registrationError);scriptCalls.push('update');registered=scripts;},
-      unregisterContentScripts:async()=>{scriptCalls.push('unregister');registered=[];}}
+    tabs:{get:async id=>tabData.get(id)||({id,url:options.url||'https://example.test/path'}),sendMessage:async()=>({noticesHidden:0}),
+      remove:async id=>removed.push(id),onUpdated:{addListener:fn=>events.updated=fn},onRemoved:{addListener:fn=>events.removed=fn}},
+    webNavigation:{onCreatedNavigationTarget:{addListener:fn=>events.created=fn},onBeforeNavigate:{addListener:fn=>events.navigate=fn}},
+    scripting:{executeScript:async({func})=>[{result:vm.runInNewContext('('+func.toString()+')()',{
+      ...(options.mainState?{__navegaLivreYoutubeState:()=>options.mainState}:{}),
+      ...(options.popupState?{__navegaLivrePopupState:()=>options.popupState}:{})
+    })}],getRegisteredContentScripts:async({ids})=>registered.filter(s=>ids.includes(s.id)),
+      registerContentScripts:async scripts=>{
+        if(options.registrationError)throw new Error(options.registrationError);
+        for(const script of scripts){if(registered.some(s=>s.id===script.id))throw Error('Duplicate registration');
+          (script.id==='navega-youtube-main'?scriptCalls:popupCalls).push('register');registered.push(script);}
+      },
+      updateContentScripts:async scripts=>{
+        if(options.registrationError)throw new Error(options.registrationError);
+        for(const script of scripts){const i=registered.findIndex(s=>s.id===script.id);if(i<0)throw Error('Missing registration');
+          (script.id==='navega-youtube-main'?scriptCalls:popupCalls).push('update');registered[i]=script;}
+      },
+      unregisterContentScripts:async({ids})=>{for(const id of ids)(id==='navega-youtube-main'?scriptCalls:popupCalls).push('unregister');registered=registered.filter(s=>!ids.includes(s.id));}}
   };
   if(options.noUpdateApi)delete chrome.scripting.updateContentScripts;
-  const context=vm.createContext({NavegaCore:C,importScripts(){},...(options.firefox ? {browser:chrome,chrome:{}} : {chrome}),console:{error:(...args)=>errors.push(args),warn(){}},URL});
+  const context=vm.createContext({NavegaCore:C,NavegaPopupPolicy:P,importScripts(){},...(options.firefox ? {browser:chrome,chrome:{}} : {chrome}),console:{error:(...args)=>errors.push(args),warn(){}},URL});
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../background.js'),'utf8'),context);
   await new Promise(resolve=>setImmediate(resolve));
   async function send(data,sender={url:'chrome-extension://fixture/popup.html'}){
     return new Promise(resolve=>message(data,sender,resolve));
   }
-  return{send,installed,calls,scriptCalls,errors,state:()=>({config,rules,enabled,registered})};
+  return{send,installed,calls,scriptCalls,popupCalls,errors,events,removed,tabData,state:()=>({config,rules,enabled,registered})};
 }
 test('worker serializes settings, installs exact-host exceptions and disables network rules',async()=>{
   const f=await workerFixture();
@@ -115,4 +131,45 @@ test('changing YouTube site scope updates the registered matches and unchanged s
   assert.ok(!f.state().registered[0].matches.includes('*://www.youtube.com/*'));
   await f.send({type:'SET_OPTION',key:'muteAds',value:true});await f.send({type:'GET_CONFIG'});
   assert.deepEqual(f.scriptCalls,['register','update']);
+});
+for(const firefox of [false,true]) {
+  test(`${firefox?'Firefox':'Chromium'} closes only known advertising targets created by a protected source tab`,async()=>{
+    const f=await workerFixture({firefox});await f.send({type:'GET_CONFIG'});
+    f.tabData.set(10,{id:10,url:'https://demand.pubadx.one/click'});
+    await f.events.created({sourceTabId:7,sourceFrameId:0,tabId:10,url:'https://demand.pubadx.one/click'});
+    assert.deepEqual(f.removed,[10]);
+    f.tabData.set(11,{id:11,url:'https://discord.gg/invite'});
+    await f.events.created({sourceTabId:7,tabId:11,url:'https://discord.gg/invite'});
+    f.tabData.set(12,{id:12,url:'https://popads.net/typed-by-user'});
+    await f.events.navigate({tabId:12,frameId:0,url:'https://popads.net/typed-by-user'});
+    assert.deepEqual(f.removed,[10],'Existing or manually opened tabs are never targets');
+    const result=await f.send({type:'GET_POPUP_DIAGNOSTIC',tabId:7});assert.equal(result.tabsClosed,1);
+  });
+  test(`${firefox?'Firefox':'Chromium'} catches blank-popup redirects and respects paused sources and the popup toggle`,async()=>{
+    const f=await workerFixture({firefox});await f.send({type:'GET_CONFIG'});
+    f.tabData.set(10,{id:10,url:'about:blank'});
+    await f.events.created({sourceTabId:7,tabId:10,url:'about:blank'});
+    assert.equal(f.removed.length,0);
+    f.tabData.set(10,{id:10,url:'https://popads.net/ad'});
+    await f.events.updated(10,{url:'https://popads.net/ad'});assert.deepEqual(f.removed,[10]);
+    await f.send({type:'SET_SITE',tabId:7,enabled:false});
+    f.tabData.set(11,{id:11,url:'https://popads.net/ad'});
+    await f.events.created({sourceTabId:7,tabId:11,url:'https://popads.net/ad'});assert.deepEqual(f.removed,[10]);
+    const script=f.state().registered.find(s=>s.id==='navega-popup-main');
+    assert.deepEqual([...script.excludeMatches],['*://example.test/*']);assert.equal(script.allFrames,true);
+    await f.send({type:'SET_SITE',tabId:7,enabled:true});
+    await f.send({type:'SET_OPTION',key:'popups',value:false});
+    assert.ok(!f.state().registered.some(s=>s.id==='navega-popup-main'));
+    f.tabData.set(12,{id:12,url:'https://popads.net/ad'});
+    await f.events.created({sourceTabId:7,tabId:12,url:'https://popads.net/ad'});assert.deepEqual(f.removed,[10]);
+  });
+}
+test('popup diagnostics sanitize page data, and page senders cannot close tabs or read privileged diagnostics',async()=>{
+  const f=await workerFixture({popupState:{installed:true,enabled:true,version:'0.4.0',popupsBlocked:4,linksBlocked:2,dialogsBlocked:Infinity,secret:'private-token'}});
+  const result=await f.send({type:'GET_POPUP_DIAGNOSTIC',tabId:7});
+  assert.equal(result.main.popupsBlocked,4);assert.equal(result.main.dialogsBlocked,0);
+  assert.equal(JSON.stringify(result).includes('private-token'),false);
+  assert.equal((await f.send({type:'GET_POPUP_DIAGNOSTIC',tabId:7},{tab:{id:7,url:'https://example.test/'}})).ok,false);
+  assert.equal((await f.send({type:'CLOSE_TAB',tabId:7},{tab:{id:7,url:'https://example.test/'}})).ok,false);
+  assert.equal(f.removed.length,0);
 });

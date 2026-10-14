@@ -4,6 +4,7 @@ Os lançamentos antigos foram reconstruídos dos pacotes preservados e publicado
 
 | Versão | Pacotes preservados | Mudança principal |
 | --- | --- | --- |
+| [0.4.0](https://github.com/RexJohnson679/navega-livre/releases/tag/v0.4.0) | Chromium e Firefox | Proteção de pop-ups, abas publicitárias, diálogos falsos e novos filtros de página. |
 | [0.3.1](https://github.com/RexJohnson679/navega-livre/releases/tag/v0.3.1) | Chromium e Firefox | Correção da API do registro do filtro do YouTube e detecção de abas antigas. |
 | [0.3.0](https://github.com/RexJohnson679/navega-livre/releases/tag/v0.3.0) | Chromium e Firefox | Listas ampliadas, bloqueio de rede no Firefox, painel e controles revisados. |
 | [0.2.0](https://github.com/RexJohnson679/navega-livre/releases/tag/v0.2.0) | Chromium | Filtro XHR e diagnóstico do player. |

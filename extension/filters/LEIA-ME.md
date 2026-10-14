@@ -16,3 +16,7 @@ O script `scripts/build.cjs` gera `rules/advertising.json`, `rules/privacy.json`
 O resumo gerado registra contagens, data e SHA-256 do snapshot local. Para atualizar, revise o arquivo-fonte e o catálogo, mantenha a atribuição/licença, gere novamente e rode os testes antes de distribuir outro pacote. A extensão instalada não contata o repositório.
 
 Estas listas não incluem o conjunto completo EasyList/EasyPrivacy nem a base do uBlock Origin. A quantidade de domínios indica o tamanho da base, não a porcentagem de anúncios removidos.
+
+## Revisão 0.4.0
+
+Foram incluídos `pubadx.one`, `diveinthebluesky.biz`, `pa.diffgremio.com` e `acscdn.com` a partir de scripts e slots observados no DOM público de uma página com anúncios. O catálogo resultante possui 3.003 domínios publicitários e 60 de rastreamento. O arquivo `filter-data.js` é gerado offline do mesmo catálogo publicitário usado em DNR; os filtros de elementos e o protetor de pop-ups não dependem de listas remotas.

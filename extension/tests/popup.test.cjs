@@ -17,11 +17,12 @@ async function fixture(options={}){
   for(const match of fs.readFileSync(path.join(root,'popup.html'),'utf8').matchAll(/id="([^"]+)"/g))nodes.set(match[1],new Node());
   const document={getElementById:id=>nodes.get(id),createElement:()=>new Node(),body:new Node(),hidden:false};
   class LocalURL extends URL{static createObjectURL(blob){lastBlob=blob;return'blob:fixture';}static revokeObjectURL(){}}
-  const api={runtime:{getManifest:()=>({version:'0.3.1',browser_specific_settings:{gecko:{id:'fixture'}}}),sendMessage:async message=>{
+  const api={runtime:{getManifest:()=>({version:'0.4.0',browser_specific_settings:{gecko:{id:'fixture'}}}),sendMessage:async message=>{
     requests.push(message);
     if(message.type==='GET_CONFIG')return{ok:true,config,network};
+    if(message.type==='GET_POPUP_DIAGNOSTIC')return{ok:true,expectedVersion:'0.4.0',registration:{active:true,error:null},main:{installed:true,enabled:true,version:'0.4.0',popupsBlocked:2,linksBlocked:1,dialogsBlocked:1},tabsClosed:1};
     if(message.type==='SET_OPTION'){config=C.normalizeConfig({...config,[message.key]:message.value});return{ok:true,config};}
-    if(message.type==='GET_YOUTUBE_DIAGNOSTIC')return{ok:true,expectedVersion:'0.3.1',registration:{active:true,error:null},main:{version:options.mainVersion||'0.3.1',installed:true,enabled:true,fetchMatched:1,xhrMatched:2,adFieldsRemoved:3}};
+    if(message.type==='GET_YOUTUBE_DIAGNOSTIC')return{ok:true,expectedVersion:'0.4.0',registration:{active:true,error:null},main:{version:options.mainVersion||'0.4.0',installed:true,enabled:true,fetchMatched:1,xhrMatched:2,adFieldsRemoved:3}};
     return{ok:false,error:'Unexpected fixture message'};
   }},tabs:{query:async()=>[{id:7,url:options.url||'https://www.youtube.com/watch?token=private#private'}],sendMessage:async(...args)=>{sent.push(args);return{adsHidden:2,skipClicks:1};},reload:async()=>{}}};
   const context=vm.createContext({NavegaCore:C,browser:api,chrome:{},document,URL:LocalURL,Blob,window:{close(){}},setInterval(){},setTimeout(){},console});
@@ -55,5 +56,5 @@ test('the panel identifies an old player script still present in an existing tab
   assert.match(f.nodes.get('youtubeState').textContent,/ainda usa o filtro 0\.3\.0/);
   assert.match(f.nodes.get('youtubeState').textContent,/abra uma nova/);
   assert.equal(f.nodes.get('youtubeState').classes.has('error'),true);
-  assert.equal(f.nodes.get('version').textContent,'0.3.1');
+  assert.equal(f.nodes.get('version').textContent,'0.4.0');
 });

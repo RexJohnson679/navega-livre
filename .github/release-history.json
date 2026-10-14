@@ -73,9 +73,9 @@
   {
     "tag": "v0.3.1",
     "name": "Navega Livre 0.3.1 — Correção no registro do YouTube",
-    "target": "current",
+    "target": "7883fbe940287658146252a6b5484a2908c7ad51",
     "notes": ".github/release-notes/v0.3.1.md",
-    "latest": true,
+    "latest": false,
     "assets": [
       {
         "path": "packages/history/v0.3.1/navega-livre-chromium-v0.3.1.zip",
@@ -92,6 +92,31 @@
       {
         "path": "packages/history/v0.3.1/SHA256SUMS.txt",
         "sha256": "6b3d015ec8ddbb94d0abce8290710f00a0f778d462c0a3b004c05f3f23212456"
+      }
+    ]
+  },
+  {
+    "tag": "v0.4.0",
+    "name": "Navega Livre 0.4.0 — Anúncios de página e pop-ups",
+    "target": "current",
+    "notes": ".github/release-notes/v0.4.0.md",
+    "latest": true,
+    "assets": [
+      {
+        "path": "packages/history/v0.4.0/navega-livre-chromium-v0.4.0.zip",
+        "sha256": "08337ed5e07411f73d0b544bcb4dd55fe6824c7dd204cecc17c121a560ea588a"
+      },
+      {
+        "path": "packages/history/v0.4.0/navega-livre-firefox-v0.4.0.zip",
+        "sha256": "ae5bd7da8a0ec00fe18e14f4f60900cf1299471c17607f41c1b7680a8b931853"
+      },
+      {
+        "path": "packages/history/v0.4.0/LICENSE-MIT.txt",
+        "sha256": "8e455c98b952282a93033b0e0a4a5880c7b8cb6bc5b71a12887f8fdbc6d3aa1e"
+      },
+      {
+        "path": "packages/history/v0.4.0/SHA256SUMS.txt",
+        "sha256": "c8e6331464e555c42f89ffe4d99da1714622b04d3f68a44df7095c0fa5cb9122"
       }
     ]
   }

@@ -1,11 +1,16 @@
 'use strict';
 if (typeof importScripts === 'function') {
-  importScripts('filter-info.js', 'common.js');
+  importScripts('filter-info.js', 'common.js', 'filter-data.js', 'popup-policy.js');
 }
 const C = globalThis.NavegaCore;
+const P = globalThis.NavegaPopupPolicy;
 const browserApi = typeof browser !== 'undefined' ? browser : chrome;
 let youtubeRegistration = {active: false, error: null};
 let networkState = {available: false, enabledRulesets: [], error: null};
+let popupRegistration = {active: false, error: null};
+const popupTargets = new Map();
+const closedPopups = new Map();
+const POPUP_TTL = 15000;
 
 let queue = Promise.resolve();
 function serialize(task) {
@@ -48,8 +53,91 @@ async function applyRules(value) {
     }
   }
   await syncYoutubeScript(value);
+  await syncPopupScript(value);
   if (networkError) throw networkError;
 }
+
+async function syncPopupScript(value) {
+  const scripting = browserApi.scripting;
+  const id = 'navega-popup-main';
+  if (!scripting?.registerContentScripts) {
+    popupRegistration = {active: false, error: 'Registro do protetor de pop-ups indisponível.'};
+    return;
+  }
+  try {
+    const existing = await scripting.getRegisteredContentScripts({ids: [id]});
+    if (!value.enabled || !value.popups) {
+      if (existing.length) await scripting.unregisterContentScripts({ids: [id]});
+      popupRegistration = {active: false, error: null};
+      popupTargets.clear();
+      return;
+    }
+    const script = {id, matches: ['http://*/*', 'https://*/*'],
+      excludeMatches: value.disabledHosts.map(host => '*://' + host + '/*'),
+      js: ['filter-data.js', 'popup-policy.js', 'popup-main.js'], runAt: 'document_start',
+      world: 'MAIN', allFrames: true, persistAcrossSessions: true};
+    const current = existing[0];
+    const equal = (a = [], b = []) => a.length === b.length && [...a].sort().every((x, i) => x === [...b].sort()[i]);
+    const unchanged = current && equal(current.matches, script.matches) && equal(current.excludeMatches, script.excludeMatches) &&
+      equal(current.js, script.js) && current.runAt === script.runAt && current.world === script.world &&
+      current.allFrames === true && current.persistAcrossSessions !== false;
+    if (!unchanged) {
+      if (current && typeof scripting.updateContentScripts === 'function') await scripting.updateContentScripts([script]);
+      else {
+        if (current) await scripting.unregisterContentScripts({ids: [id]});
+        await scripting.registerContentScripts([script]);
+      }
+    }
+    popupRegistration = {active: true, error: null};
+  } catch (error) {
+    popupRegistration = {active: false, error: String(error?.message || error).slice(0, 240)};
+  }
+}
+
+function prunePopupTargets() {
+  const now = Date.now();
+  for (const [id, entry] of popupTargets) if (now - entry.created > POPUP_TTL) popupTargets.delete(id);
+  while (popupTargets.size > 200) popupTargets.delete(popupTargets.keys().next().value);
+}
+async function closeKnownPopup(tabId, hint) {
+  const entry = popupTargets.get(tabId);
+  if (!entry || entry.closing || Date.now() - entry.created > POPUP_TTL || !P) return;
+  const value = await config();
+  if (!value.enabled || !value.popups) return;
+  let source, target;
+  try { [source, target] = await Promise.all([browserApi.tabs.get(entry.sourceTabId), browserApi.tabs.get(tabId)]); }
+  catch { popupTargets.delete(tabId); return; }
+  const host = C.normalizeHost(source.url || '');
+  if (!host || !C.active(value, host)) return;
+  const blank = !target.url || target.url === 'about:blank';
+  if (!P.adUrl(target.url) && !P.adUrl(target.pendingUrl) && !(blank && P.adUrl(hint))) return;
+  // Recheck after asynchronous reads; never close the source or an unrelated tab.
+  if (popupTargets.get(tabId) !== entry || entry.closing || !browserApi.tabs.remove) return;
+  entry.closing = true;
+  try {
+    await browserApi.tabs.remove(tabId);
+    closedPopups.set(entry.sourceTabId, (closedPopups.get(entry.sourceTabId) || 0) + 1);
+    while (closedPopups.size > 200) closedPopups.delete(closedPopups.keys().next().value);
+  } finally { popupTargets.delete(tabId); }
+}
+if (browserApi.webNavigation?.onCreatedNavigationTarget) {
+  browserApi.webNavigation.onCreatedNavigationTarget.addListener(details => {
+    if (!Number.isInteger(details.sourceTabId) || !Number.isInteger(details.tabId) || details.tabId === details.sourceTabId) return;
+    prunePopupTargets();
+    popupTargets.set(details.tabId, {sourceTabId: details.sourceTabId, created: Date.now(), closing: false});
+    return closeKnownPopup(details.tabId, details.url).catch(() => {});
+  });
+  browserApi.webNavigation.onBeforeNavigate?.addListener(details => {
+    if (details.frameId === 0) return closeKnownPopup(details.tabId, details.url).catch(() => {});
+  });
+}
+browserApi.tabs?.onUpdated?.addListener((tabId, change) => {
+  if (change.url) return closeKnownPopup(tabId, change.url).catch(() => {});
+});
+browserApi.tabs?.onRemoved?.addListener(tabId => {
+  popupTargets.delete(tabId); closedPopups.delete(tabId);
+  for (const [id, entry] of popupTargets) if (entry.sourceTabId === tabId) popupTargets.delete(id);
+});
 
 async function syncYoutubeScript(value) {
   if (!browserApi.scripting || !browserApi.scripting.registerContentScripts) {
@@ -155,7 +243,26 @@ async function handle(message, sender) {
   
   if (message.type === 'GET_CONFIG') {
     await queue;
-    return {ok: true, config: await config(), network: networkState, filters: C.FILTER_INFO};
+    return {ok: true, config: await config(), network: networkState, popups: popupRegistration, filters: C.FILTER_INFO};
+  }
+  if (message.type === 'GET_POPUP_DIAGNOSTIC') {
+    await queue;
+    const tab = await browserApi.tabs.get(message.tabId);
+    let main = {installed: false}, error = null;
+    if (C.normalizeHost(tab.url || '')) try {
+      const results = await browserApi.scripting.executeScript({target: {tabId: tab.id}, world: 'MAIN', func: () => {
+        const read = globalThis.__navegaLivrePopupState;
+        if (typeof read !== 'function') return {installed: false};
+        const raw = read(), safe = {installed: raw?.installed === true, enabled: raw?.enabled === true};
+        safe.version = typeof raw?.version === 'string' && /^\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(raw.version) ? raw.version : null;
+        for (const key of ['popupsBlocked', 'linksBlocked', 'dialogsBlocked']) safe[key] =
+          typeof raw?.[key] === 'number' && Number.isFinite(raw[key]) ? Math.max(0, raw[key]) : 0;
+        return safe;
+      }});
+      if (results[0]?.result) main = results[0].result;
+    } catch (err) { error = String(err?.message || err).slice(0, 240); }
+    return {ok: true, registration: popupRegistration, main, error,
+      tabsClosed: closedPopups.get(tab.id) || 0, expectedVersion: browserApi.runtime.getManifest().version};
   }
   if (message.type === 'GET_YOUTUBE_DIAGNOSTIC') {
     await queue;

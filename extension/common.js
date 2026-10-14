@@ -2,10 +2,10 @@
 (() => {
   'use strict';
   const DEFAULTS = {
-    enabled: true, privacy: true, cosmetics: true, youtube: true, skipAds: true, muteAds: false,
+    enabled: true, privacy: true, cosmetics: true, popups: true, youtube: true, skipAds: true, muteAds: false,
     disabledHosts: [], repairHosts: []
   };
-  const OPTIONS = ['enabled', 'privacy', 'cosmetics', 'youtube', 'skipAds', 'muteAds'];
+  const OPTIONS = ['enabled', 'privacy', 'cosmetics', 'popups', 'youtube', 'skipAds', 'muteAds'];
   const FILTER_INFO = globalThis.NavegaFilterInfo ||
     (typeof require === 'function' ? require('./filter-info.js') : {});
   function normalizeHost(value) {
