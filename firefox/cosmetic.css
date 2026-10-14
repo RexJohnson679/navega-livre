@@ -1,0 +1,2 @@
+/* A packaged stylesheet applies only to nodes marked by the content script. */
+[data-navega-livre-hidden] { display: none !important; }
