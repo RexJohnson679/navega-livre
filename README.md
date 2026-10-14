@@ -1,2 +1,18 @@
-# navega-livre
-Extensão para navegadores focada em redução local de anúncios, ajustes no YouTube e reparo de avisos de adblock.
+# Navega Livre 0.1.0 — snapshot arquivado
+
+Primeiros pacotes preservados do Navega Livre para Chromium e Firefox.
+
+### O que esta versão tinha
+
+- Lista inicial de 16 domínios publicitários no pacote Chromium.
+- Ocultação de espaços conhecidos, controles do YouTube e tentativa opcional de ajustar avisos de bloqueador.
+- Pausa por domínio e preferências locais.
+
+### Limitações conhecidas
+
+O pacote Firefox ainda não declarava as listas de bloqueio de rede. O registro do filtro também usava uma chamada de atualização incorreta, posteriormente corrigida na 0.3.1. Esta versão fica disponível para consulta ao histórico; prefira a 0.3.1.
+
+Os ZIPs anexados mantêm os bytes dos pacotes antigos preservados. O código do tag foi reconstruído desses arquivos, em pastas separadas por navegador, com metadados de publicação adicionados durante o arquivamento. Este lançamento está sendo publicado retroativamente, sem representar uma publicação anterior no GitHub.
+
+
+As pastas `chromium/` e, quando disponível, `firefox/` contêm os arquivos extraídos dos pacotes preservados.

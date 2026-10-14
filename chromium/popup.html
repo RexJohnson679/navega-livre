@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Navega Livre</title><link rel="stylesheet" href="popup.css"></head>
+<body>
+  <header><span class="logo"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3 27 7v9c0 7-11 13-11 13S5 23 5 16V7Z" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="m10 16 4 4 8-9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></span><div><h1>Navega Livre</h1><p>Menos anúncios. Mais controle.</p></div><span class="version">0.1</span></header>
+  <main>
+    <section class="site-card"><div class="eyebrow">NESTE SITE</div><div class="site-line"><strong id="hostname">Carregando…</strong><span id="status" class="pill">…</span></div><label class="row"><span>Ativar proteção neste site</span><input id="siteEnabled" type="checkbox" class="switch" disabled></label></section>
+    <section class="metrics"><div><strong id="hiddenCount">—</strong><span>elementos ocultados</span></div><div><strong id="skipCount">—</strong><span>cliques em pular</span></div></section>
+    <section class="settings"><label class="row"><span>Bloqueio geral<small>Redes de anúncios e espaços conhecidos</small></span><input id="enabled" type="checkbox" class="switch"></label><label class="row"><span>Ajustes do YouTube<small>Filtro experimental de publicidade e interface</small></span><input id="youtube" type="checkbox" class="switch"></label><label class="row"><span>Pular quando disponível<small>Somente quando aparecer o botão de pular</small></span><input id="skipAds" type="checkbox" class="switch"></label><label class="row"><span>Silenciar anúncios em vídeo<small>Restaurar o áudio depois do anúncio</small></span><input id="muteAds" type="checkbox" class="switch"></label></section>
+    <section class="repair"><div><span class="eyebrow">AVISO DE BLOQUEADOR</span><h2>O site pede para desativar?</h2><p>Tente um ajuste local. Compatibilidade varia por site.</p></div><button id="repair" class="primary" disabled>Tentar liberar aviso</button><label class="row compact"><span>Repetir neste site</span><input id="autoRepair" type="checkbox" class="switch" disabled></label></section>
+    <p id="message" role="status" aria-live="polite">Os contadores são desta página, não de pedidos de rede.</p>
+    <div class="actions"><button id="reload">Recarregar página</button><button id="report">Exportar diagnóstico</button></div>
+  </main>
+  <footer>Processamento local · Sem anúncios próprios<small>Anúncios em vídeo podem permanecer. Não é um desbloqueador de assinaturas.</small></footer>
+  <script src="common.js"></script><script src="popup.js"></script>
+</body></html>
