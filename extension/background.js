@@ -74,7 +74,7 @@ async function syncPopupScript(value) {
     }
     const script = {id, matches: ['http://*/*', 'https://*/*'],
       excludeMatches: value.disabledHosts.map(host => '*://' + host + '/*'),
-      js: ['filter-data.js', 'popup-policy.js', 'popup-main.js'], runAt: 'document_start',
+      js: ['popup-main-bundle.js'], runAt: 'document_start',
       world: 'MAIN', allFrames: true, persistAcrossSessions: true};
     const current = existing[0];
     const equal = (a = [], b = []) => a.length === b.length && [...a].sort().every((x, i) => x === [...b].sort()[i]);

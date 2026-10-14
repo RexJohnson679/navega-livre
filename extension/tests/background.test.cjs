@@ -163,6 +163,7 @@ for(const firefox of [false,true]) {
     await f.events.created({sourceTabId:7,tabId:11,url:'https://popads.net/ad'});assert.deepEqual(f.removed,[10]);
     const script=f.state().registered.find(s=>s.id==='navega-popup-main');
     assert.deepEqual([...script.excludeMatches],['*://example.test/*']);assert.equal(script.allFrames,true);
+    assert.deepEqual([...script.js],['popup-main-bundle.js']);assert.equal(script.world,'MAIN');
     await f.send({type:'SET_SITE',tabId:7,enabled:true});
     await f.send({type:'SET_OPTION',key:'popups',value:false});
     assert.ok(!f.state().registered.some(s=>s.id==='navega-popup-main'));

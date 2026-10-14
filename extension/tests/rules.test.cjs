@@ -4,6 +4,7 @@ const fs=require('node:fs');
 const os=require('node:os');
 const path=require('node:path');
 const {execFileSync}=require('node:child_process');
+const vm=require('node:vm');
 const C=require('../common.js');
 const root=path.resolve(__dirname,'..');
 const ads=JSON.parse(fs.readFileSync(path.join(root,'rules/advertising.json')));
@@ -61,7 +62,19 @@ test('both reproducible builds declare network permissions, early preferences an
       assert.equal(manifest.content_scripts[0].run_at,'document_start');assert.ok(manifest.content_scripts[0].js.includes('youtube-bridge.js'));
       assert.equal(manifest.content_scripts[1].all_frames,true);
       assert.equal(manifest.content_scripts[1].run_at,'document_start');assert.ok(manifest.content_scripts[1].js.includes('popup-bridge.js'));
-      for(const name of ['filter-data.js','popup-policy.js','popup-main.js'])assert.ok(fs.existsSync(path.join(out,name)));
+      for(const name of ['filter-data.js','popup-policy.js','popup-main.js','popup-main-bundle.js'])assert.ok(fs.existsSync(path.join(out,name)));
+      // The production MAIN entry must work without helpers injected by the
+      // isolated content script, including Firefox's separate execution global.
+      const page={open:()=>({closed:false})};page.top=page;
+      const main=vm.createContext({window:page,URL,location:{href:'https://reader.example/'},
+        performance:{now:()=>0},navigator:{userActivation:{isActive:true}},setTimeout(){},addEventListener(){},
+        document:{addEventListener(){},dispatchEvent(){}},Event:class{}});
+      vm.runInContext(fs.readFileSync(path.join(out,'popup-main-bundle.js'),'utf8'),main);
+      assert.equal(page.__navegaLivrePopupState().installed,true);
+      assert.equal(page.open('https://unknown-ad.example/'),null);
+      assert.equal(main.NavegaPopupPolicy.adUrl('https://demand.pubadx.one/click'),true);
+      assert.equal(main.NavegaPopupPolicy.adUrl('https://pubadx.one.example/'),false);
+      assert.equal(main.NavegaBlockingData.advertising.length,C.FILTER_INFO.advertisingDomains);
       assert.deepEqual(manifest.content_scripts[1].css,['cosmetic.css']);assert.ok(fs.existsSync(path.join(out,'cosmetic.css')));
       assert.equal(fs.readFileSync(path.join(out,'rules/advertising.json'),'utf8'),fs.readFileSync(path.join(root,'rules/advertising.json'),'utf8'));
       assert.ok(fs.existsSync(path.join(out,'filters/LICENSE-StevenBlack.txt')));
