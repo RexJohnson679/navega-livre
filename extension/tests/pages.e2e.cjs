@@ -18,17 +18,28 @@ const profile=fs.mkdtempSync(path.join(os.tmpdir(),'navega-pages-'));
         await new Promise(r=>setTimeout(r,25));
       }throw Error('Popup guard did not register');
     });
-    await context.route('**/*',route=>{
+    // Never fulfill packaged chrome-extension:// scripts with fixture HTML.
+    await context.route(/^https?:\/\//,route=>{
       const url=new URL(route.request().url());
       const body=url.pathname==='/normal'?'<p id="normal">Link normal aberto</p>':url.pathname==='/frame'?'<p>Iframe normal</p>':html;
       return route.fulfill({contentType:'text/html',body});
     });
     const page=await context.newPage();
+    page.on('pageerror',error=>console.log('FIXTURE ERROR',error.message));
+    page.on('console',message=>{if(message.type()==='error')console.log('FIXTURE CONSOLE',message.text());});
     const unexpectedDialogs=[];
     page.on('dialog',d=>{unexpectedDialogs.push(d.message());d.dismiss();});
     for(const host of ['reader.navega.test','news.navega.test','video.navega.test']) {
       await page.goto('https://'+host+'/');
-      await page.waitForFunction(()=>typeof __navegaLivrePopupState==='function' && __navegaLivrePopupState().enabled);
+      try {
+        await page.waitForFunction(()=>typeof window.__navegaLivrePopupState==='function' && window.__navegaLivrePopupState().enabled,{},{timeout:10000});
+      } catch(error) {
+        console.log('GUARD DEBUG',await page.evaluate(()=>({origin:location.origin,guard:typeof window.__navegaLivrePopupState,
+          state:typeof window.__navegaLivrePopupState==='function'?window.__navegaLivrePopupState():null,
+          policy:typeof window.NavegaPopupPolicy,body:document.body?.textContent?.slice(0,120)})));
+        console.log('REGISTRATION DEBUG',await worker.evaluate(async()=>({config:(await chrome.storage.local.get('config')).config,scripts:await chrome.scripting.getRegisteredContentScripts()})));
+        throw error;
+      }
       await page.waitForFunction(()=>getComputedStyle(document.querySelector('#floating')).display==='none');
       assert.equal(await page.locator('#reader').isVisible(),true);assert.equal(await page.locator('#header').isVisible(),true);
       assert.equal(await page.locator('#normalframe').isVisible(),true);assert.equal(await page.locator('#adframe').isVisible(),false);
@@ -53,7 +64,7 @@ const profile=fs.mkdtempSync(path.join(os.tmpdir(),'navega-pages-'));
     }
     const tabId=await worker.evaluate(async()=>(await chrome.tabs.query({url:'https://video.navega.test/*'}))[0].id);
     await worker.evaluate(async()=>{const {config}=await chrome.storage.local.get('config');await chrome.storage.local.set({config:{...config,disabledHosts:['video.navega.test']}});});
-    await page.waitForFunction(()=>!__navegaLivrePopupState().enabled);
+    await page.waitForFunction(()=>!window.__navegaLivrePopupState().enabled);
     await page.waitForFunction(()=>getComputedStyle(document.querySelector('#banner')).display!=='none');
     const popupPromise=context.waitForEvent('page');await page.locator('#background').click();
     const allowed=await popupPromise;await allowed.waitForLoadState();await allowed.close();
