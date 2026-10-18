@@ -2,7 +2,13 @@
 
 Extensão para Chrome, Brave, Edge e Firefox com bloqueio local de anúncios, proteção de cliques, ajustes do YouTube e reparo opcional de avisos de adblock.
 
-**Versão 0.7.1 · Manifest V3 · Código próprio MIT · Sem conta ou telemetria**
+**Versão 0.8.0 · Manifest V3 · Código próprio MIT · Sem conta ou telemetria**
+
+## Android e interface de toque — 0.8.0
+
+O pacote Firefox declara compatibilidade com Firefox para Android 128+. O painel se adapta à largura disponível, tem controles de toque de pelo menos 44 px e funciona em retrato/paisagem. Quando o painel sobreposto suspende o reparo, o botão salva a escolha e retorna à página para o acompanhamento continuar. A cópia manual usa instruções de toque no Android. O motor, as listas e as permissões continuam os mesmos.
+
+Leia [ANDROID.md](ANDROID.md) para envio à Mozilla, instalação e limites. Os ZIPs do GitHub são pacotes de submissão sem assinatura. Instalação permanente no Firefox, inclusive Android, exige assinatura da Mozilla ou publicação na loja. O pacote Chromium deve ser enviado à loja de Chromium; não ao AMO.
 
 ## Correção da 0.7.1 — Mais foco
 
@@ -29,8 +35,8 @@ Os arquivos são pacotes de teste local, sem assinatura de loja. O fluxo do repo
 
 | Pacote | Navegadores | Mínimo declarado |
 | --- | --- | --- |
-| [navega-livre-chromium-v0.7.1.zip](https://github.com/RexJohnson679/navega-livre/raw/refs/heads/main/packages/history/v0.7.1/navega-livre-chromium-v0.7.1.zip) | Chrome, Brave e Edge | Chromium 120 |
-| [navega-livre-firefox-v0.7.1.zip](https://github.com/RexJohnson679/navega-livre/raw/refs/heads/main/packages/history/v0.7.1/navega-livre-firefox-v0.7.1.zip) | Firefox para computador | Firefox 128 |
+| [navega-livre-chromium-v0.8.0.zip](https://github.com/RexJohnson679/navega-livre/raw/refs/heads/main/packages/history/v0.8.0/navega-livre-chromium-v0.8.0.zip) | Chrome, Brave e Edge | Chromium 120 |
+| [navega-livre-firefox-v0.8.0.zip](https://github.com/RexJohnson679/navega-livre/raw/refs/heads/main/packages/history/v0.8.0/navega-livre-firefox-v0.8.0.zip) | Firefox para computador e Android | Firefox 128 |
 
 **Para manter suas preferências, atualize os arquivos na pasta que já está carregada.** Guarde uma cópia da pasta anterior antes de substituí-la. Na página de extensões, recarregue a extensão e depois as páginas abertas. Mantenha uma única versão principal ativa.
 
@@ -43,7 +49,7 @@ Os arquivos são pacotes de teste local, sem assinatura de loja. O fluxo do repo
 - **Proteção:** pause somente o hostname da aba pelo controle grande; o controle Proteção geral afeta todos os sites.
 - **YouTube:** preserva filtragem publicitária, pular quando disponível e silêncio opcional. Os controles Mais foco tratam apenas a apresentação da interface.
 - **Avisos:** Tentar liberar aviso analisa a mensagem e estrutura localmente, tenta fechar/ocultar e ativa acompanhamento neste domínio. Desligue Detectar novos avisos para parar e desfazer estilos/atributos quando possível.
-- **Ferramentas:** cole um link ou escolha Usar esta aba, clique em Limpar link, revise e copie. Nenhuma navegação ou requisição é feita pela limpeza. Se a cópia automática falhar, use Ctrl+C no resultado selecionado.
+- **Ferramentas:** cole um link ou escolha Usar esta aba, clique em Limpar link, revise e copie. Nenhuma navegação ou requisição é feita pela limpeza. Se a cópia automática falhar, copie o resultado selecionado pelo teclado ou menu de toque.
 - **Central:** abra pelo ícone de ajustes no cabeçalho ou Gerenciar sites e backups.
 - **Contadores:** representam ações na página, não pedidos de rede bloqueados ou porcentagem de eficácia. Clique em ↻ para consultar o estado atualizado.
 
@@ -76,9 +82,9 @@ npm run build:firefox
 npm run verify:builds
 ```
 
-A suíte local tem 127 testes. Foi exercitada também a interface em Firefox 153 real, com APIs WebExtension simuladas: painel, temas, links, importação com revisão, gestão de sites e foco reversível. O reparo de diálogo nativo passou novamente em DOM real.
+A suíte local tem 130 testes. Foi exercitada também a interface em Firefox 153 real, com APIs WebExtension simuladas: painel, temas, links, importação com revisão, gestão de sites e foco reversível. O reparo de diálogo nativo passou novamente em DOM real.
 
-Esses testes de navegador não instalam a extensão completa e não validam DNR ou comunicação entre mundos de execução. Chromium e instalação completa do Firefox não foram executados nesta rodada. Antes de uma publicação em loja, valide os pacotes instalados nos navegadores. Detalhes em [VALIDACAO.md](VALIDACAO.md).
+O CI exige instalação no Chromium e Firefox, testes de telas pequenas, lint da Mozilla e teste nativo de runtime em Firefox Android em emulador. O teste de Android instrumenta uma cópia do runtime com um script adicional de QA, sem permissões novas. Não comprova reprodução ao vivo do YouTube ou todos os aparelhos. Consulte o resultado do commit e [VALIDACAO.md](VALIDACAO.md).
 
 Testes opcionais com Playwright e Firefox instalados no ambiente de QA:
 

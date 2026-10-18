@@ -7,13 +7,13 @@ const {firefox}=require(modules?modules+'/playwright':'playwright');
 const root=path.resolve(__dirname,'..'),C=require('../common.js'),T=require('../preferences.js');
 const version=require('../package.json').version;
 const screenshotDir=process.env.NAVEGA_QA_SCREENSHOTS;
-function mockBrowser({config,preferences,version}){
+function mockBrowser({config,preferences,version,platform='linux'}){
   const listeners=[],tabListeners=[];
   window.__state={config,preferences};window.__requests=[];window.__copied=[];window.__optionsOpened=0;
   Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>window.__copied.push(text)}});
   const target={id:7,url:'https://www.youtube.com/watch?v=video&utm_source=share#t=10'};
   window.browser={
-    runtime:{getManifest:()=>({version,browser_specific_settings:{gecko:{id:'fixture'}}}),openOptionsPage:async()=>{window.__optionsOpened++;},sendMessage:async message=>{
+    runtime:{getPlatformInfo:async()=>({os:platform}),getManifest:()=>({version,browser_specific_settings:{gecko:{id:'fixture'}}}),openOptionsPage:async()=>{window.__optionsOpened++;},sendMessage:async message=>{
       window.__requests.push(message);
       if(message.type==='GET_CONFIG')return{ok:true,config:window.__state.config,network:{available:true,enabledRulesets:['advertising','privacy','privacyExtended'],error:null}};
       if(message.type==='GET_FOCUS_DIAGNOSTIC')return{ok:true,focus:{supported:true,installed:true,active:true,cssLoaded:true}};
@@ -34,14 +34,14 @@ function mockBrowser({config,preferences,version}){
     tabs:{query:async()=>[target],get:async()=>target,sendMessage:async()=>({adsHidden:28,skipClicks:2}),reload:async()=>{},onUpdated:{addListener:fn=>tabListeners.push(fn)}}
   };
 }
-async function prepare(context){
+async function prepare(context,{platform='linux'}={}){
   await context.route('https://navega-ui.test/**',async route=>{
     const rel=new URL(route.request().url()).pathname.slice(1),file=path.resolve(root,rel);
     if(!file.startsWith(root+path.sep)||!fs.existsSync(file))return route.fulfill({status:404,body:'Not found'});
     const types={'.html':'text/html','.css':'text/css','.js':'text/javascript','.png':'image/png','.md':'text/plain'};
     await route.fulfill({body:fs.readFileSync(file),contentType:types[path.extname(file)]||'application/octet-stream'});
   });
-  await context.addInitScript(mockBrowser,{config:C.normalizeConfig({disabledHosts:['news.example'],repairHosts:['read.example']}),preferences:T.normalize(),version});
+  await context.addInitScript(mockBrowser,{config:C.normalizeConfig({disabledHosts:['news.example'],repairHosts:['read.example']}),preferences:T.normalize(),version,platform});
 }
 async function popup(context){
   const page=await context.newPage();await page.setViewportSize({width:440,height:600});
@@ -111,7 +111,8 @@ async function focus(browser){
   assert.equal(await page.locator('#comments').isVisible(),true);assert.equal(await page.locator('#related').isVisible(),true);
   assert.equal(await page.locator('[data-navega-livre-focus-comments]').count(),0);await context.close();return 'youtube-focus';
 }
-(async()=>{let browser;try{
+module.exports={prepare};
+if(require.main===module)(async()=>{let browser;try{
   browser=await firefox.launch({headless:true,timeout:25000});
   const context=await browser.newContext();context.setDefaultTimeout(10000);await prepare(context);
   const scenarios=[await popup(context),await options(context),await focus(browser)];

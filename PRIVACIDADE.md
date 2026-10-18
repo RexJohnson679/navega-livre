@@ -1,4 +1,4 @@
-# Privacidade — Navega Livre 0.7.1
+# Privacidade — Navega Livre 0.8.0
 
 O funcionamento é local. A extensão não possui servidor, telemetria, anúncios próprios, pagamentos ou código remoto. Filtros e código executável estão no pacote; não há atualização remota automática de listas.
 
@@ -23,6 +23,10 @@ A limpeza de links trata somente o texto que você cola ou escolhe preencher da 
 A central permite exportar e importar um backup com opções, listas de domínios, tema e foco. O arquivo pode revelar os domínios escolhidos. Não inclui cookies, senhas, histórico, textos de páginas, contadores ou links usados na ferramenta. A importação aceita até 512 KB, valida a estrutura/tipos e permite revisar as opções antes de aplicar. Não importa código nem filtros. Restaurar o padrão limpa as preferências e listas locais após confirmação.
 
 O painel consulta diagnósticos ao abrir ou em ações/eventos de navegação e preferências. Não faz mais consultas periódicas a cada dois segundos. Não há recurso de música nesta versão.
+
+## Adaptação ao Android
+
+O painel pode consultar runtime.getPlatformInfo para reconhecer Android e ajustar as instruções de cópia e o retorno à página após ativar o reparo. Somente a identificação local do sistema é usada, na memória do painel. Não é armazenada, exportada nem enviada a servidores. A extensão atua nas páginas do Firefox e não acessa os dados de outros aplicativos Android.
 
 ## Permissões
 

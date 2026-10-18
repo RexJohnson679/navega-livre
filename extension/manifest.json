@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Navega Livre",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "minimum_chrome_version": "120",
   "description": "Bloqueio local de publicidade e rastreadores, ajustes do YouTube e avisos de bloqueador em sites compatíveis.",
   "permissions": [

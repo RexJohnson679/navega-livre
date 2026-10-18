@@ -5,7 +5,7 @@ const api = typeof browser !== 'undefined' ? browser : chrome;
 const $ = id => document.getElementById(id);
 let tab = null, settings = C.normalizeConfig(), page = null, busy = false, refreshing = false, youtubeDiagnostic = null, popupDiagnostic = null, network = null;
 let preferences = T.normalize();
-let focusDiagnostic=null;
+let focusDiagnostic=null, android=false;
 const tabNames = ['general', 'youtube', 'repair', 'tools'];
 function applyTheme() {
   document.documentElement.dataset.theme = preferences.theme;
@@ -179,6 +179,14 @@ async function repair(enabled) {
   if (!enabled) { tell('Ajuste automático desligado. Recarregue para desfazer também o adaptador específico.'); return; }
   if (!result.page) { tell('Preferência salva. Recarregue a página e tente novamente.'); return; }
   const repair = result.page.repair;
+  // Android's action overlay can hide the underlying document. The saved
+  // opt-in resumes the bounded repair controller on visibilitychange when
+  // this overlay closes; do not keep asking the user to retry behind it.
+  if (android && repair?.limited && !result.known) {
+    tell('Detecção ativada. Voltando à página para analisar o aviso.');
+    window.close();
+    return;
+  }
   if (repair?.state === 'partial') { tell('O aviso foi ocultado, mas o conteúdo ainda apresenta um bloqueio. Alguns estados internos do site exigem um ajuste específico.'); return; }
   if (result.known || repair?.repaired > 0 || (!repair && result.page.noticesHidden > 0)) tell('Aviso fechado ou ocultado. Confira o conteúdo. A detecção continua ativa neste site.');
   else if (repair?.state === 'error' || repair?.limited) tell('A análise atingiu um limite. O aviso pode exigir um ajuste específico; tente novamente com ele visível.');
@@ -231,7 +239,9 @@ $('cleanLink').addEventListener('click', () => run(async () => {
 $('copyLink').addEventListener('click', () => run(async () => {
   if (!$('linkOutput').value) return;
   try { await navigator.clipboard.writeText($('linkOutput').value); tell('Link copiado.'); }
-  catch { $('linkOutput').focus(); $('linkOutput').select(); tell('O navegador não autorizou a cópia. Use Ctrl+C no resultado selecionado.'); }
+  catch { $('linkOutput').focus(); $('linkOutput').select(); tell(android
+    ? 'Toque e segure o resultado selecionado e escolha Copiar.'
+    : 'O navegador não autorizou a cópia. Use Ctrl+C no resultado selecionado.'); }
 }));
 $('report').addEventListener('click', () => run(async () => {
   await refreshPage();
@@ -254,6 +264,7 @@ $('report').addEventListener('click', () => run(async () => {
 (async () => {
   try {
     $('version').textContent = api.runtime.getManifest().version;
+    try { android = (await api.runtime.getPlatformInfo?.())?.os === 'android'; } catch { /* A desktop without this optional API remains usable. */ }
     if (api.storage?.local) {
       const data = await api.storage.local.get('preferences');
       preferences = T.normalize(data.preferences);

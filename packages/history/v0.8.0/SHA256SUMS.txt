@@ -1,0 +1,4 @@
+8e455c98b952282a93033b0e0a4a5880c7b8cb6bc5b71a12887f8fdbc6d3aa1e  LICENSE-MIT.txt
+94355ad6c93cce2acaba5fb9d884b356925921e789c9421d21b58f0c1bd72ce3  navega-livre-chromium-v0.8.0.zip
+a755f0da9e5c4e460fd940b6a8e435a790dfbc941592e36394950de5255d0def  navega-livre-codigo-fonte-v0.8.0.zip
+e1b7dcb4b466c370d070a149ab4f5696be1cb1cd0c376b635042661c4bfd9502  navega-livre-firefox-v0.8.0.zip

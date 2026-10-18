@@ -1,64 +1,20 @@
-# Validação — Navega Livre 0.7.1
+# Validação — Navega Livre 0.8.0
 
-Base funcional: 0.7.0 local, com o mesmo motor/listas de anúncios da 0.6.2. A versão 0.7.1 corrige a integração de Mais foco antes da sincronização pública.
+A versão inclui declaração Firefox Android 128+, painel responsivo e alvos de toque, cópia manual adequada ao Android e retorno à página depois de salvar o reparo quando o painel mantém o documento oculto.
 
-## Defeitos reproduzidos e correção
+## Conferido localmente
 
-A implementação 0.7.0 salvava preferências, mas dependia de o content script já ter sido carregado na página. A atualização da extensão não garantia sua aplicação às abas previamente abertas. Usava também style inline; o código exato da 0.7.0 foi reproduzido em Firefox real sob uma política de estilos restrita: a tag era criada, mas os comentários continuavam visíveis.
+- 130 testes Node: aprovados, incluindo retorno do painel Android apenas depois de salvar, preservação de erros/resultado parcial e falha na consulta opcional de plataforma.
+- Firefox 153 real: interface e interações com toque em 320×640, 360×740, 412×850 e 800×360. Os quatro painéis e a central não ultrapassaram a largura; controles de cabeçalho/abas têm pelo menos 44 px. APIs usadas nesse cenário são fixtures, não um dispositivo Android.
+- Interface renovada e aplicação do foco em duas abas com CSP restrita: aprovadas novamente em Firefox 153, com adaptadores locais das primitivas de browser API.
+- Os builds contêm os mesmos arquivos, com diferenças somente no manifesto. Sem permissões novas.
+- Regras/listas/CSS cosmético, content.js, reparo, políticas e bridges idênticos aos da 0.7.1. Nos scripts MAIN e controlador de foco mudou apenas a versão.
+- web-ext 10.8.0: zero erros; avisos de metadados recentes de privacidade em versões antigas e assinatura de minerador dentro de uma regra que bloqueia scripts de rede. Não há minerador executável.
 
-O controlador novo é autocontido. O serviço salva a preferência e aplica o script e a folha de estilo empacotada nas abas de YouTube existentes. O CSS é declarativo nas páginas novas e usa scripting.insertCSS quando ausente em uma página já aberta. Um marcador de versão evita reinserções. Estado ativo, carregamento do CSS e erros aparecem no painel. Falha de aplicação não apaga a preferência.
+## Validação nativa e publicação
 
-Foram acrescentados seletores para componentes recentes de Shorts, comentários em painel/chat e relacionados, incluindo variações móveis. As marcações são nomes de componentes, sem depender de texto traduzido. O teste público de HTML inicial não foi suficiente para confirmar todas as variações da interface ao vivo, portanto os cenários de DOM controlados e os testes instalados continuam essenciais.
+O workflow exige os cenários com extensão instalada no Chromium e Firefox e um teste separado com Firefox Android em emulador descartável. Esse último copia os arquivos de runtime sem modificar seus bytes e acrescenta somente um script de QA ao segundo plano. Não acrescenta permissões. Confere plataforma Android, DNR, registro MAIN, bloqueio/pausa/reversão de um script servido localmente, cosméticos, reparo/reversão e CSS de foco em componente móvel.
 
-## Testes locais
+Resultado final do CI deve ser consultado no commit correspondente. Não há ainda resultado local em aparelho Android: o ambiente local não dispõe do SDK/KVM. O teste emulado não representa todos os aparelhos ou reprodução ao vivo no YouTube. Não foram medidas RAM e bateria no Android, nem feita nova afirmação de eficácia universal. A medição de 95,45% da 0.7.1 permanece apenas um registro daquela execução no Firefox.
 
-127 testes locais passaram. O serviço foi exercitado com os namespaces Chromium e Firefox, incluindo a diferença de caixa de CSSOrigin dos navegadores, aplicação em abas existentes, não duplicação do CSS, rejeição de mensagens de páginas e preservação da opção quando a injeção falha.
-
-Em Firefox 153 real, focus-application.firefox.e2e.cjs executou o background.js e focus.js reais, com adaptadores locais das primitivas de browser API. Duas abas inicialmente sem o controlador receberam o foco, inclusive uma com o legado 0.7.0. Sob CSP de estilos restrita, as três opções ocultaram componentes clássicos/recentes/móveis, preservaram conteúdo, vídeo e navegação normais e restauraram os elementos ao desligar. Cada aba recebeu o CSS uma vez; reinjeções não multiplicaram ouvintes. Pausa por hostname exato foi respeitada.
-
-A interface renovada foi exercitada novamente em Firefox real com APIs simuladas. Esses cenários não instalam toda a extensão nem comprovam DNR/isolamento reais. O CI possui cenários separados com instalação real nos dois navegadores, agora incluindo os controles Mais foco e uma aba Firefox aberta antes de instalar o pacote. O resultado de CI deve ser consultado no commit publicado; não é apresentado como resultado local.
-
-## Preservação e limites
-
-As regras, listas, CSS cosmético, políticas publicitárias e motor de reparo continuam iguais aos da base 0.6.2. Nos scripts MAIN do YouTube e pop-ups só mudou a versão. Nenhuma permissão foi adicionada. Não foi feita medição de RAM total ou de redução de CPU. A medição do Turtlecute feita no CI é registrada abaixo e não equivale a uma garantia para toda publicidade.
-
-O foco não usa varredura periódica ou MutationObserver. Mantém três atributos e um controlador por aba, usa uma folha de estilo empacotada e reage a preferências e navegação. A aplicação explícita limita-se a 64 abas por ação e informa quando excede esse limite. Não há garantia para todos os layouts futuros do YouTube.
-
-Os pacotes e o código público não incluem o auxiliar privado, imagens do usuário, relatórios recebidos ou downloads de páginas usados na investigação. Os logs publicados são de fixtures neutras. Músicas permanecem fora do escopo. Pacotes sem assinatura de loja; publicação em Releases condicionada aos testes do workflow.
-
-## Reproduzir
-
-```sh
-npm test
-npm run build:chromium
-npm run build:firefox
-npm run verify:builds
-python3 .github/scripts/check_packages.py
-node extension/tests/renewal.firefox.e2e.cjs
-node extension/tests/focus-application.firefox.e2e.cjs
-node extension/tests/native-dialog.firefox.e2e.cjs
-```
-
-Os três últimos comandos exigem Playwright e Firefox no ambiente de QA. NAVEGA_QA_MODULES indica módulos alternativos. NAVEGA_FOCUS_BASELINE pode apontar para focus.js da 0.7.0 para o controle negativo de CSP. O processo de teste local usou MOZ_DISABLE_CONTENT_SANDBOX=1; isso não é uma configuração do pacote distribuído.
-
-O teste instalado do Firefox usa --allow-system-access no geckodriver para acessar a interface da extensão em um perfil descartável, conforme o requisito do geckodriver atual. A opção não integra a extensão e não altera o navegador do usuário. O cenário de Chromium aguarda a prontidão do script de conteúdo e respeita a trava de outra janela legítima; um cenário instalado separado verifica a liberação do diálogo nativo sem outras janelas.
-
-No CI em Firefox 157, a extensão instalada passou no cenário de Mais foco em uma aba aberta antes da instalação, sob CSP restrita, preservando o conteúdo normal e restaurando os três grupos ao desligar. Os testes Chromium de cosméticos do YouTube, áudio e bloqueio real de rede também passaram. A rodada completa encerrou com sucesso no commit 8bf916d89f4cfbf817589afa8f482bf3af130ed5 e o lançamento foi publicado.
-
-O cenário de aviso genérico tinha um erro de transporte: HTML UTF-8 sem charset era interpretado com outra codificação, corrompendo a palavra anúncios. Com o mesmo content.js e notice-repair.js, o caso passou de not-found a repaired após corrigir somente o Content-Type da fixture. Os cenários servidos por Playwright agora declaram UTF-8. As requisições Firefox de controle usam o servidor local, comprovam acesso antes da instalação e novamente durante a pausa por site. O perfil descartável desativa o preload HSTS para esses hosts HTTP locais; essa preferência não faz parte do pacote.
-
-## Resultado final do CI e lançamento
-
-[Execução completa aprovada](https://github.com/RexJohnson679/navega-livre/actions/runs/39169475823), em 18/10/2026. O commit testado e o alvo do lançamento são 8bf916d89f4cfbf817589afa8f482bf3af130ed5. As atualizações deste relatório não alteram o código executável dos pacotes.
-
-- 127 testes Node, testes do publicador, builds e conferência byte a byte dos dois ZIPs: aprovados.
-- Chromium 156.0.8078.4 com extensão instalada: foco via controles reais do popup, CSP restrita, componentes recentes, reversão, YouTube, bloqueio real de rede, pausa, pop-ups, conteúdo preservado e reparo de diálogo nativo em domínio desconhecido: aprovados.
-- Firefox 157.0 com extensão instalada: foco em aba aberta antes da instalação, CSP restrita, componentes recentes, reversão, YouTube, anúncios e pop-ups em três páginas simuladas, raízes abertas e DNR com controle antes da instalação e durante a pausa: aprovados.
-- Turtlecute no Firefox 157.0: 126 de 132 requisições bloqueadas (95,45%); cosméticos estáticos e dinâmicos passaram. O resultado vale para essa execução, navegador e conjunto de testes. Não mede todos os formatos de anúncios nem consumo de memória.
-
-[Lançamento v0.7.1](https://github.com/RexJohnson679/navega-livre/releases/tag/v0.7.1) publicado com os pacotes de Chromium e Firefox, licença MIT e SHA256SUMS. Os digests informados pelo GitHub foram conferidos contra os pacotes validados:
-
-| Pacote | SHA-256 |
-| --- | --- |
-| Chromium | b3bb97e38e7b2d6c56e61daad46c98176aaf86e7df28224ba05d6154d6a321b0 |
-| Firefox | df3216dda88ff0c154e9d05d45db799a3a33d0ffef551f94af1409615393fdd6 |
+O pacote de código-fonte para revisão Mozilla contém o código e os snapshots necessários ao build offline; BUILD-FIREFOX.md descreve os comandos. Auxiliar privado, relatórios recebidos, imagens do usuário, dados de investigação e capturas de QA não integram os pacotes ou o repositório.

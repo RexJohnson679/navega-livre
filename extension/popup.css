@@ -12,3 +12,24 @@ main{padding:0 19px 12px}.site-card{padding:15px 16px 12px;border:1px solid var(
 .tabs button{transition:none}button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,a:focus-visible{outline-color:var(--muted)}
 :root[data-theme=light] .brand-mark{color:#456b31}
 @media(prefers-color-scheme:light){:root[data-theme=system] .brand-mark{color:#456b31}:root[data-theme=system] .pill{color:var(--accent-ink)}}
+/* The same popup is used in Firefox Android's action overlay. */
+body{max-width:100vw}
+.brand,.site-line strong,.row>span{min-width:0}
+.engine-state,#message,.hint{overflow-wrap:anywhere}
+@media(max-width:390px){
+  .app-header{padding:14px 12px 10px;gap:6px}.brand p{display:none}
+  h1{font-size:15px}.brand-mark{width:29px}.brand-mark svg{width:28px}
+  main{padding-inline:12px}.site-card{padding:12px}.site-line strong{font-size:17px}
+  .tabs{gap:1px}.tabs button{font-size:10px;padding-inline:2px}
+  .paired{grid-template-columns:1fr}.metrics span{font-size:9px}
+  footer{padding-inline:12px;flex-wrap:wrap}
+}
+@media(pointer:coarse){
+  body{max-height:none;padding-bottom:env(safe-area-inset-bottom)}
+  button,.icon-button,.tabs button,.site-top .refresh-button{min-width:44px;min-height:44px;touch-action:manipulation}
+  .icon-button{width:44px;height:44px}.power{min-width:44px;min-height:44px}
+  .row,.row.compact,.paired .row{min-height:52px}.row>span{line-height:1.5}
+  .paired .switch{transform:none}.paired{grid-template-columns:1fr}
+  textarea,select{font-size:16px}.engine-state,.hint,#message{font-size:12px}
+  .row small{font-size:11px}.row>span,.row.compact>span{font-size:13px}
+}

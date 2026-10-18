@@ -46,6 +46,8 @@ jobs:
           npm install --prefix "$RUNNER_TEMP/navega-qa" --no-audit --no-fund playwright@1.64.0
           "$RUNNER_TEMP/navega-qa/node_modules/.bin/playwright" install --with-deps chromium firefox
           python3 -m pip install --disable-pip-version-check selenium==4.51.0
+          npm install --prefix "$RUNNER_TEMP/navega-lint" --no-audit --no-fund web-ext@10.8.0
+          "$RUNNER_TEMP/navega-lint/node_modules/.bin/web-ext" lint --source-dir dist/firefox --output json > "$RUNNER_TEMP/navega-lint-result.json"
       - name: Verificar interface, foco e reparo em Firefox real
         env:
           NAVEGA_QA_MODULES: ${{ runner.temp }}/navega-qa/node_modules
@@ -53,6 +55,7 @@ jobs:
           node extension/tests/renewal.firefox.e2e.cjs
           node extension/tests/native-dialog.firefox.e2e.cjs
           node extension/tests/focus-application.firefox.e2e.cjs
+          node extension/tests/mobile.firefox.e2e.cjs
       - name: Testar extensão instalada no Chromium
         env:
           NAVEGA_QA_MODULES: ${{ runner.temp }}/navega-qa/node_modules
@@ -68,8 +71,46 @@ jobs:
         run: |
           printf '%s\n' '127.0.0.1 reader.navega.test news.navega.test video.navega.test normal.navega.test ad.a-ads.com www.youtube.com lycantoons.com vegitoons.black nap5k.com n6wxm.com metrics.icloud.com cdn.jsdelivr.net' | sudo tee -a /etc/hosts >/dev/null
           python3 extension/tests/firefox.e2e.py
+  verify-android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Obter o commit público exato
+        run: |
+          git init --quiet
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git fetch --quiet --depth=1 origin "${GITHUB_SHA}"
+          git checkout --quiet --detach FETCH_HEAD
+      - name: Construir o pacote e preparar ferramentas
+        run: |
+          npm run build:firefox
+          npm install --prefix "$RUNNER_TEMP/navega-android" --no-audit --no-fund web-ext@10.8.0
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "emulator" "system-images;android-35;google_apis;x86_64"
+          sudo chmod a+rw /dev/kvm
+          echo no | "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" create avd --name navega_qa --package "system-images;android-35;google_apis;x86_64" --force
+      - name: Iniciar Android descartável e instalar Firefox oficial
+        run: |
+          "$ANDROID_HOME/emulator/emulator" -avd navega_qa -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot -memory 2048 -cores 2 > "$RUNNER_TEMP/navega-emulator.log" 2>&1 &
+          adb wait-for-device
+          for attempt in $(seq 1 120); do
+            if [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = 1 ]; then break; fi
+            sleep 2
+          done
+          test "$(adb shell getprop sys.boot_completed | tr -d '\r')" = 1
+          adb shell input keyevent 82
+          curl --fail --location --retry 2 'https://archive.mozilla.org/pub/fenix/releases/158.0/android/fenix-158.0-android-x86_64/fenix-158.0.multi.android-x86_64.apk' --output "$RUNNER_TEMP/navega-firefox.apk"
+          adb install -r "$RUNNER_TEMP/navega-firefox.apk"
+          adb shell dumpsys package org.mozilla.firefox | rg 'versionName='
+      - name: Verificar runtime em Firefox Android nativo
+        env:
+          NAVEGA_EXTENSION_DIR: dist/firefox
+          NAVEGA_WEB_EXT: ${{ runner.temp }}/navega-android/node_modules/.bin/web-ext
+        run: python3 extension/tests/android.e2e.py
+      - name: Encerrar o emulador
+        if: always()
+        run: adb emu kill || true
   publish:
-    needs: verify
+    needs: [verify, verify-android]
     permissions:
       contents: write
     if: github.repository == 'RexJohnson679/navega-livre' && github.ref == 'refs/heads/main'

@@ -6,7 +6,7 @@
   if (W.__navegaLivreYoutubeInstalled) return;
   W.__navegaLivreYoutubeInstalled = true;
   let enabled = true;
-  const state = {version: '0.7.1', startedAt: Date.now(), fetchMatched: 0,
+  const state = {version: '0.8.0', startedAt: Date.now(), fetchMatched: 0,
     xhrMatched: 0, initialObjectsCleaned: 0, embeddedResponsesCleaned: 0, adFieldsRemoved: 0, parseFailures: 0};
   Object.defineProperty(W, '__navegaLivreYoutubeState', {
     configurable: true, value: () => ({...state, installed: true, enabled})

@@ -36,5 +36,8 @@ for(const [i,manifest]of manifests.entries()){
 }
 assert.equal(manifests[0].background.service_worker,'background.js');
 assert.equal(manifests[1].browser_specific_settings.gecko.strict_min_version,'128.0');
+assert.deepEqual(manifests[1].browser_specific_settings.gecko_android,{strict_min_version:'128.0'});
+assert.equal(manifests[1].background.service_worker,undefined,'Mozilla package must use background scripts');
+assert.equal(manifests[0].browser_specific_settings,undefined,'Chromium is a separate package');
 assert.ok(manifests[1].background.scripts.indexOf('preferences.js')<manifests[1].background.scripts.indexOf('background.js'));
 console.log('PASS_BUILDS',JSON.stringify({version,files:names[0].length,targets:['chromium','firefox'],newPermissions:0,onlyManifestDiffers:true}));

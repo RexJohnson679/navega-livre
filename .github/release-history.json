@@ -123,9 +123,9 @@
   {
     "tag": "v0.7.1",
     "name": "Navega Livre 0.7.1 — Renovação e correção do Mais foco",
-    "target": "current",
+    "target": "8bf916d89f4cfbf817589afa8f482bf3af130ed5",
     "notes": ".github/release-notes/v0.7.1.md",
-    "latest": true,
+    "latest": false,
     "assets": [
       {
         "path": "packages/history/v0.7.1/LICENSE-MIT.txt",
@@ -142,6 +142,35 @@
       {
         "path": "packages/history/v0.7.1/navega-livre-firefox-v0.7.1.zip",
         "sha256": "df3216dda88ff0c154e9d05d45db799a3a33d0ffef551f94af1409615393fdd6"
+      }
+    ]
+  },
+  {
+    "tag": "v0.8.0",
+    "name": "Navega Livre 0.8.0 — Firefox Android e interface de toque",
+    "target": "current",
+    "notes": ".github/release-notes/v0.8.0.md",
+    "latest": true,
+    "assets": [
+      {
+        "path": "packages/history/v0.8.0/navega-livre-chromium-v0.8.0.zip",
+        "sha256": "94355ad6c93cce2acaba5fb9d884b356925921e789c9421d21b58f0c1bd72ce3"
+      },
+      {
+        "path": "packages/history/v0.8.0/navega-livre-firefox-v0.8.0.zip",
+        "sha256": "e1b7dcb4b466c370d070a149ab4f5696be1cb1cd0c376b635042661c4bfd9502"
+      },
+      {
+        "path": "packages/history/v0.8.0/navega-livre-codigo-fonte-v0.8.0.zip",
+        "sha256": "a755f0da9e5c4e460fd940b6a8e435a790dfbc941592e36394950de5255d0def"
+      },
+      {
+        "path": "packages/history/v0.8.0/LICENSE-MIT.txt",
+        "sha256": "8e455c98b952282a93033b0e0a4a5880c7b8cb6bc5b71a12887f8fdbc6d3aa1e"
+      },
+      {
+        "path": "packages/history/v0.8.0/SHA256SUMS.txt",
+        "sha256": "3a031ee3603c195edc283b9eefcb1b76a535baa9525c527862200aae8cf6690f"
       }
     ]
   }

@@ -105,7 +105,10 @@ if (target) {
   }
   if (target === 'firefox') {
     delete manifest.minimum_chrome_version;
-    manifest.browser_specific_settings = {gecko: {id: 'navega-livre@local.extension', strict_min_version: '128.0', data_collection_permissions:{required:['none']}}};
+    manifest.browser_specific_settings = {
+      gecko: {id: 'navega-livre@local.extension', strict_min_version: '128.0', data_collection_permissions:{required:['none']}},
+      gecko_android: {strict_min_version: '128.0'}
+    };
     manifest.background = {scripts: ['filter-info.js', 'common.js', 'preferences.js', 'filter-data.js', 'popup-policy.js', 'background.js']};
   } else {
     delete manifest.browser_specific_settings;

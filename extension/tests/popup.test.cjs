@@ -7,7 +7,7 @@ const C=require('../common.js');
 const T=require('../preferences.js');
 const root=path.resolve(__dirname,'..');
 async function fixture(options={}){
-  const nodes=new Map(),requests=[],sent=[],copied=[];let lastBlob,resolveOption,preferences=T.normalize(),config=C.normalizeConfig(),network={available:true,enabledRulesets:['advertising','privacy'],error:null},opened=0;
+  const nodes=new Map(),requests=[],sent=[],copied=[];let lastBlob,resolveOption,preferences=T.normalize(),config=C.normalizeConfig(),network={available:true,enabledRulesets:['advertising','privacy'],error:null},opened=0,closed=0;
   class Node{
     constructor(){this.events={};this.attributes={};this.dataset={};this.value='';this.checked=false;this.disabled=false;this.hidden=false;this.classes=new Set();this.classList={add:name=>this.classes.add(name),remove:name=>this.classes.delete(name),toggle:(name,on)=>on?this.classes.add(name):this.classes.delete(name)};}
     setAttribute(key,value){this.attributes[key]=value;}
@@ -19,22 +19,22 @@ async function fixture(options={}){
   for(const match of fs.readFileSync(path.join(root,'popup.html'),'utf8').matchAll(/id="([^"]+)"/g))nodes.set(match[1],new Node());
   const document={getElementById:id=>nodes.get(id),createElement:()=>new Node(),body:new Node(),documentElement:new Node(),hidden:false};
   class LocalURL extends URL{static createObjectURL(blob){lastBlob=blob;return'blob:fixture';}static revokeObjectURL(){}}
-  const api={storage:{local:{get:async()=>({preferences}),set:async data=>{if(options.storageError)throw Error('Storage fixture failure');preferences=data.preferences;}}},runtime:{openOptionsPage:async()=>{opened++;},getManifest:()=>({version:C.FILTER_INFO.version,browser_specific_settings:{gecko:{id:'fixture'}}}),sendMessage:async message=>{
+  const api={storage:{local:{get:async()=>({preferences}),set:async data=>{if(options.storageError)throw Error('Storage fixture failure');preferences=data.preferences;}}},runtime:{getPlatformInfo:async()=>{if(options.platformError)throw Error('Platform unavailable');return{os:options.platform||'linux'};},openOptionsPage:async()=>{opened++;},getManifest:()=>({version:C.FILTER_INFO.version,browser_specific_settings:{gecko:{id:'fixture'}}}),sendMessage:async message=>{
     requests.push(message);
     if(message.type==='GET_CONFIG')return{ok:true,config,network};
     if(message.type==='GET_FOCUS_DIAGNOSTIC')return{ok:true,focus:{supported:true,installed:true,active:true,cssLoaded:true,...preferences}};
     if(message.type==='SET_FOCUS_OPTION'){if(options.storageError)throw Error('Storage fixture failure');preferences=T.normalize({...preferences,[message.key]:message.value});return{ok:true,preferences,focusSync:{applied:1,failed:0}};}
     if(message.type==='GET_POPUP_DIAGNOSTIC')return{ok:true,expectedVersion:C.FILTER_INFO.version,registration:{active:true,error:null},main:{installed:true,enabled:true,version:C.FILTER_INFO.version,popupsBlocked:2,linksBlocked:1,dialogsBlocked:1},tabsClosed:1};
     if(message.type==='SET_OPTION'){if(options.deferOption)await new Promise(resolve=>resolveOption=resolve);config=C.normalizeConfig({...config,[message.key]:message.value});return{ok:true,config};}
-    if(message.type==='SET_REPAIR')return{ok:true,config,known:false,page:options.repairPage||{noticesHidden:0,repair:{state:'not-found',repaired:0}}};
+    if(message.type==='SET_REPAIR'){if(options.repairError)throw Error('Repair unavailable');return{ok:true,config,known:false,page:options.repairPage||{noticesHidden:0,repair:{state:'not-found',repaired:0}}};}
     if(message.type==='GET_YOUTUBE_DIAGNOSTIC')return{ok:true,expectedVersion:C.FILTER_INFO.version,registration:{active:true,error:null},main:{version:options.mainVersion||C.FILTER_INFO.version,installed:true,enabled:true,fetchMatched:1,xhrMatched:2,adFieldsRemoved:3}};
     return{ok:false,error:'Unexpected fixture message'};
   }},tabs:{get:async()=>({id:7,url:options.url||'https://www.youtube.com/watch?token=private#private'}),query:async()=>[{id:7,url:options.url||'https://www.youtube.com/watch?token=private#private'}],sendMessage:async(...args)=>{sent.push(args);return{adsHidden:2,skipClicks:1};},reload:async()=>{}}};
-  const context=vm.createContext({NavegaCore:C,NavegaTools:T,browser:api,chrome:{},document,URL:LocalURL,Blob,navigator:{clipboard:{writeText:async value=>{if(options.clipboardError)throw Error('Denied');copied.push(value);}}},window:{close(){}},setInterval(){throw Error('No polling expected');},setTimeout(){},console});
+  const context=vm.createContext({NavegaCore:C,NavegaTools:T,browser:api,chrome:{},document,URL:LocalURL,Blob,navigator:{clipboard:{writeText:async value=>{if(options.clipboardError)throw Error('Denied');copied.push(value);}}},window:{close(){closed++;}},setInterval(){throw Error('No polling expected');},setTimeout(){},console});
   vm.runInContext(fs.readFileSync(path.join(root,'popup.js'),'utf8'),context);
   const flush=async()=>{for(let i=0;i<3;i++)await new Promise(resolve=>setImmediate(resolve));};
   await flush();
-  return{nodes,requests,sent,copied,flush,preferences:()=>preferences,opened:()=>opened,finishOption:()=>resolveOption?.(),blob:()=>lastBlob,networkError:error=>network={...network,error}};
+  return{nodes,requests,sent,copied,flush,preferences:()=>preferences,opened:()=>opened,closed:()=>closed,finishOption:()=>resolveOption?.(),blob:()=>lastBlob,networkError:error=>network={...network,error}};
 }
 test('Firefox popup uses promise APIs, reads the main frame and keeps tabs keyboard accessible',async()=>{
   const f=await fixture();
@@ -117,4 +117,20 @@ test('a failed preferences write restores the persisted focus choice and reports
   focus.checked=true;focus.events.change({target:focus});await f.flush();
   assert.equal(focus.checked,false);assert.equal(f.preferences().focusShorts,false);
   assert.match(f.nodes.get('message').textContent,/Storage fixture failure/);
+});
+test('Android returns to the page after saving repair when the action overlay suspends scanning',async()=>{
+  const f=await fixture({platform:'android',repairPage:{repair:{state:'limited',limited:true,repaired:0}}});
+  f.nodes.get('repair').click();await f.flush();
+  assert.ok(f.requests.some(x=>x.type==='SET_REPAIR'&&x.enabled));
+  assert.equal(f.closed(),1);assert.match(f.nodes.get('message').textContent,/Voltando à página/);
+});
+test('Android keeps an error or partial repair visible and never closes before saving',async()=>{
+  for(const options of [{repairError:true},{repairPage:{repair:{state:'partial',repaired:1,remaining:1}}}]){
+    const f=await fixture({platform:'android',...options});f.nodes.get('repair').click();await f.flush();assert.equal(f.closed(),0);
+  }
+});
+test('Android manual copy uses touch instructions and a platform lookup failure leaves desktop usable',async()=>{
+  const f=await fixture({platform:'android',clipboardError:true});f.nodes.get('linkInput').value='https://example.test/?utm_source=share';
+  f.nodes.get('cleanLink').click();await f.flush();f.nodes.get('copyLink').click();await f.flush();assert.match(f.nodes.get('message').textContent,/Toque e segure/);
+  const fallback=await fixture({platformError:true});assert.equal(fallback.nodes.get('hostname').textContent,'www.youtube.com');
 });

@@ -4,7 +4,7 @@
   const P = globalThis.NavegaPopupPolicy;
   const W = typeof window === 'object' ? window : globalThis;
   if (!P || typeof W.__navegaLivrePopupState === 'function') return;
-  const VERSION = '0.7.1';
+  const VERSION = '0.8.0';
   let enabled = W.top === W;
   let gesture = null;
   const counters = {popupsBlocked: 0, linksBlocked: 0, dialogsBlocked: 0};

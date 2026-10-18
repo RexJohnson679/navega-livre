@@ -1,7 +1,7 @@
 /* Self-contained focus controller. No polling or mutation observers. */
 (() => {
   'use strict';
-  const VERSION='0.7.1', MARKER='nl-071';
+  const VERSION='0.8.0', MARKER='nl-071';
   const api=typeof browser!=='undefined'?browser:chrome;
   const hosts=['youtube.com','www.youtube.com','m.youtube.com'];
   if(!hosts.includes(location.hostname))return;
