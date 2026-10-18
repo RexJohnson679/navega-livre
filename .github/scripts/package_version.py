@@ -10,7 +10,9 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def archive(destination, files):
-    handle, temporary = tempfile.mkstemp(prefix='navega-package-', suffix='.zip', dir=destination.parent)
+    temporary_directory = ROOT / 'dist'
+    temporary_directory.mkdir(parents=True, exist_ok=True)
+    handle, temporary = tempfile.mkstemp(prefix='navega-package-', suffix='.zip', dir=temporary_directory)
     os.close(handle)
     try:
         with zipfile.ZipFile(temporary, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as output:

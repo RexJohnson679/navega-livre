@@ -86,6 +86,7 @@ jobs:
           npm run build:firefox
           npm install --prefix "$RUNNER_TEMP/navega-android" --no-audit --no-fund web-ext@10.8.0
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "emulator" "system-images;android-35;google_apis;x86_64"
+          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
           sudo chmod a+rw /dev/kvm
           echo no | "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" create avd --name navega_qa --package "system-images;android-35;google_apis;x86_64" --force
       - name: Iniciar Android descartável e instalar Firefox oficial
