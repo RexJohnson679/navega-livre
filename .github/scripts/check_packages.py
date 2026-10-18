@@ -13,7 +13,8 @@ for target in ('chromium', 'firefox'):
     expected_name = f'navega-livre-{target}-v{version}.zip'
     asset = next(x for x in entry['assets'] if Path(x['path']).name == expected_name)
     path = ROOT / asset['path']
-    assert hashlib.sha256(path.read_bytes()).hexdigest() == asset['sha256']
+    actual = hashlib.sha256(path.read_bytes()).hexdigest()
+    assert actual == asset['sha256'], f'Checksum differs: {path.name}; expected {asset["sha256"]}, actual {actual}'
     build = ROOT / 'dist' / target
     with zipfile.ZipFile(path) as archive:
         assert archive.testzip() is None
