@@ -33,6 +33,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header('Content-Type', 'text/html; charset=utf-8')
         self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Cache-Control', 'no-store')
         self.end_headers()
         self.wfile.write(body.encode())
 
@@ -48,6 +49,9 @@ def main():
     options.set_preference('network.trr.mode', 5)  # Local fixture DNS, not public DoH.
     options.set_preference('dom.security.https_first', False)
     options.set_preference('dom.security.https_only_mode', False)
+    # Every fixture hostname maps to a local HTTP server in this disposable
+    # profile, including domains normally upgraded by the preload list.
+    options.set_preference('network.stricttransportsecurity.preloadlist', False)
     options.set_preference('devtools.console.stdout.content', True)
     options.set_preference('extensions.webextensions.uuids', json.dumps({'navega-livre@local.extension': UUID}))
     options.set_preference('privacy.trackingprotection.enabled', False)
@@ -66,6 +70,17 @@ def main():
             print('FIREFOX', driver.capabilities['browserVersion'], flush=True)
             # This page is already open when the extension is installed.
             driver.get(f'http://www.youtube.com:{server.server_port}/focus')
+            network_destinations = ('nap5k.com', 'n6wxm.com', 'metrics.icloud.com')
+            def fetch_resource(destination):
+                return driver.execute_async_script('''
+                    const done=arguments[1];
+                    fetch(arguments[0],{cache:'no-store'}).then(r=>done(r.status)).catch(()=>done(0));
+                ''', f'http://{destination}:{server.server_port}/resource?probe={time.monotonic_ns()}')
+            # All destinations resolve to the fixture server. Prove reachability
+            # before installation so DNS/network failures cannot count as blocks.
+            for destination in (*network_destinations, 'cdn.jsdelivr.net'):
+                assert fetch_resource(destination) == 200, ('baseline connection', destination)
+            print('PASS Firefox fixture network reachable before installation', flush=True)
             focus_handle = driver.current_window_handle
             driver.switch_to.new_window('tab')
             addon = driver.install_addon(str(package), temporary=True)
@@ -170,11 +185,15 @@ def main():
                 wait.until(lambda d: d.execute_script('return (window.wrappedJSObject||window).dismissed === 1 && !document.querySelector("#notice")'))
                 assert driver.execute_script('return (window.wrappedJSObject||window).paid') == 0
                 assert driver.execute_script('return document.body.style.overflow') == 'auto'
-                for destination in ('nap5k.com','n6wxm.com','metrics.icloud.com'):
-                    blocked = driver.execute_async_script('const done=arguments[1];fetch(arguments[0]).then(()=>done(false)).catch(()=>done(true))',f'http://{destination}:{server.server_port}/resource')
-                    assert blocked, destination
-                normal = driver.execute_async_script('const done=arguments[1];fetch(arguments[0]).then(r=>done(r.status)).catch(()=>done(0))',f'http://cdn.jsdelivr.net:{server.server_port}/resource')
-                assert normal == 200
+                for destination in network_destinations:
+                    assert fetch_resource(destination) == 0, ('blocked', destination)
+                assert fetch_resource('cdn.jsdelivr.net') == 200
+                extension_request({'type':'SET_SITE','enabled':False},host)
+                for destination in network_destinations:
+                    assert fetch_resource(destination) == 200, ('paused site', destination)
+                extension_request({'type':'SET_SITE','enabled':True},host)
+                for destination in network_destinations:
+                    assert fetch_resource(destination) == 0, ('resumed site', destination)
                 extension_request({'type':'SET_OPTION','key':'cosmetics','value':False})
                 wait.until(lambda d: d.find_element(By.ID,'AdBillboard').is_displayed())
                 wait.until(lambda d: d.execute_script('return getComputedStyle(document.querySelector("#shadow-host").shadowRoot.querySelector("#shadow-ad")).display === "flex"'))
@@ -185,7 +204,7 @@ def main():
                 driver.get('https://adblock.turtlecute.org/')
                 WebDriverWait(driver,90).until(lambda d: d.execute_script('const x=JSON.parse(localStorage.getItem("adb_tool")||"{}");const a=x.results?.at(-1)?.abt;return a?.total>0 && a.blocked+a.notblocked>=a.total'))
                 score = driver.execute_script('const a=JSON.parse(localStorage.getItem("adb_tool")).results.at(-1).abt;return {total:a.total,blocked:a.blocked,notblocked:a.notblocked,cosmetics:a.cosmetic_test,scripts:a.script}')
-                score.update({'site':'https://adblock.turtlecute.org/','engine':driver.capabilities['browserVersion'],'version':'0.5.0','percent':100*score['blocked']/score['total']})
+                score.update({'site':'https://adblock.turtlecute.org/','engine':driver.capabilities['browserVersion'],'version':json.loads((BUILD/'manifest.json').read_text())['version'],'percent':100*score['blocked']/score['total']})
                 Path('qa').mkdir(exist_ok=True)
                 Path('qa/turtlecute-firefox.json').write_text(json.dumps(score,indent=2)+'\n')
                 print('TURTLECUTE_MEASURED_FIREFOX',json.dumps(score),flush=True)

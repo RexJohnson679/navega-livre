@@ -11,7 +11,7 @@ const html=`<!doctype html><html><head><style>dialog::backdrop{backdrop-filter:b
   context=await chromium.launchPersistentContext(profile,{channel:'chromium',headless:true,args:['--no-sandbox','--disable-extensions-except='+extension,'--load-extension='+extension]});
   const worker=context.serviceWorkers()[0]||await context.waitForEvent('serviceworker');
   await worker.evaluate(async()=>{await queue;await init();});
-  await context.route('https://unknown-repair.example/**',route=>route.fulfill({contentType:'text/html',body:html}));
+  await context.route('https://unknown-repair.example/**',route=>route.fulfill({contentType:'text/html; charset=utf-8',body:html}));
   const page=await context.newPage();await page.goto('https://unknown-repair.example/');
   await page.waitForFunction(()=>document.documentElement.hasAttribute('data-navega-livre-cosmetics'));
   assert.equal(await page.locator('#notice').isVisible(),true);

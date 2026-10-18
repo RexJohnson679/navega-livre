@@ -57,10 +57,10 @@ const knownFixture = `<!doctype html><html><body>
       }
       throw Error('Extension failed to initialize');
     });
-    await context.route('https://www.youtube.com/**', route => route.fulfill({contentType: 'text/html', body:
+    await context.route('https://www.youtube.com/**', route => route.fulfill({contentType: 'text/html; charset=utf-8', body:
       new URL(route.request().url()).pathname==='/navega-focus'?fs.readFileSync(path.join(__dirname,'fixtures/focus.html'),'utf8'):youtubeFixture}));
-    await context.route('https://fixtures.example.test/**', route => route.fulfill({contentType: 'text/html', body: genericFixture}));
-    await context.route('https://tavvkkj.xyz/**', route => route.fulfill({contentType: 'text/html', body: knownFixture}));
+    await context.route('https://fixtures.example.test/**', route => route.fulfill({contentType: 'text/html; charset=utf-8', body: genericFixture}));
+    await context.route('https://tavvkkj.xyz/**', route => route.fulfill({contentType: 'text/html; charset=utf-8', body: knownFixture}));
     await context.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({contentType: 'text/plain', headers: {'access-control-allow-origin': '*'}, body: 'ad'}));
     const page = await context.newPage();
     await page.goto('https://www.youtube.com/watch?v=fixture');
@@ -106,7 +106,19 @@ const knownFixture = `<!doctype html><html><body>
     await page.waitForFunction(() => !document.hidden && document.documentElement.hasAttribute('data-navega-livre-cosmetics'));
     assert.equal(await page.locator('#warning').isVisible(), true, 'Notice repair defaults to off');
     await patchConfig({repairHosts: ['fixtures.example.test']});
-    await page.waitForFunction(() => getComputedStyle(document.querySelector('#warning')).display === 'none');
+    try {
+      await page.waitForFunction(() => getComputedStyle(document.querySelector('#warning')).display === 'none');
+    } catch (error) {
+      const config = await getConfig();
+      const status = await worker.evaluate(async () => {
+        const tab=(await chrome.tabs.query({url:'https://fixtures.example.test/*'}))[0];
+        return await chrome.tabs.sendMessage(tab.id,{type:'PAGE_STATUS'});
+      });
+      const dom=await page.evaluate(()=>({hidden:document.hidden,visibility:document.visibilityState,
+        warning:document.querySelector('#warning').outerHTML,cosmetics:document.documentElement.getAttribute('data-navega-livre-cosmetics')}));
+      console.log('CHROMIUM_REPAIR_DIAGNOSTIC',JSON.stringify({config,status,dom}));
+      throw error;
+    }
     assert.equal(await page.locator('#article').isVisible(), true);
     assert.equal(await page.locator('#login').isVisible(), true);
     assert.equal(await page.locator('#paid').isVisible(), true);
