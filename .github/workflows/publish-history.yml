@@ -60,6 +60,7 @@ jobs:
         run: |
           node extension/tests/browser.e2e.cjs
           node extension/tests/pages.e2e.cjs
+          node extension/tests/automatic-repair.e2e.cjs
       - name: Testar extensão instalada no Firefox
         if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
         env:

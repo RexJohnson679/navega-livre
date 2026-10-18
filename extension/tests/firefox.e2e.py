@@ -59,7 +59,9 @@ def main():
                 for p in sorted(BUILD.rglob('*')):
                     if p.is_file(): archive.write(p, p.relative_to(BUILD))
             gecko_log = Path(temp) / 'geckodriver.log'
-            driver = webdriver.Firefox(options=options, service=Service(log_output=str(gecko_log)))
+            # Required by current geckodriver for this isolated profile's extension UI.
+            # https://github.com/mozilla/geckodriver/releases/tag/v0.37.1
+            driver = webdriver.Firefox(options=options, service=Service(log_output=str(gecko_log), service_args=['--allow-system-access']))
             driver.set_page_load_timeout(30)
             print('FIREFOX', driver.capabilities['browserVersion'], flush=True)
             # This page is already open when the extension is installed.

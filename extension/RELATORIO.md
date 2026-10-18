@@ -40,3 +40,5 @@ node extension/tests/native-dialog.firefox.e2e.cjs
 ```
 
 Os três últimos comandos exigem Playwright e Firefox no ambiente de QA. NAVEGA_QA_MODULES indica módulos alternativos. NAVEGA_FOCUS_BASELINE pode apontar para focus.js da 0.7.0 para o controle negativo de CSP. O processo de teste local usou MOZ_DISABLE_CONTENT_SANDBOX=1; isso não é uma configuração do pacote distribuído.
+
+O teste instalado do Firefox usa --allow-system-access no geckodriver para acessar a interface da extensão em um perfil descartável, conforme o requisito do geckodriver atual. A opção não integra a extensão e não altera o navegador do usuário. O cenário de Chromium aguarda a prontidão do script de conteúdo e respeita a trava de outra janela legítima; um cenário instalado separado verifica a liberação do diálogo nativo sem outras janelas.

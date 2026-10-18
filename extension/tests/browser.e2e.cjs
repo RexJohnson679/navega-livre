@@ -102,14 +102,17 @@ const knownFixture = `<!doctype html><html><body>
 
     await patchConfig({disabledHosts: [], repairHosts: []});
     await page.goto('https://fixtures.example.test/page?token=fixture-secret#private');
-    await page.waitForTimeout(300);
+    await page.bringToFront();
+    await page.waitForFunction(() => !document.hidden && document.documentElement.hasAttribute('data-navega-livre-cosmetics'));
     assert.equal(await page.locator('#warning').isVisible(), true, 'Notice repair defaults to off');
     await patchConfig({repairHosts: ['fixtures.example.test']});
     await page.waitForFunction(() => getComputedStyle(document.querySelector('#warning')).display === 'none');
     assert.equal(await page.locator('#article').isVisible(), true);
     assert.equal(await page.locator('#login').isVisible(), true);
     assert.equal(await page.locator('#paid').isVisible(), true);
-    assert.equal(await page.evaluate(() => document.body.style.overflow), 'auto');
+    // These unrelated visible dialogs retain their scroll lock. The separate
+    // native-dialog scenario verifies unlocking when only the notice is present.
+    assert.equal(await page.evaluate(() => document.body.style.overflow), 'hidden');
     await patchConfig({repairHosts: []});
     await page.waitForFunction(() => getComputedStyle(document.querySelector('#warning')).display !== 'none');
     assert.equal(await page.evaluate(() => document.body.style.overflow), 'hidden');
