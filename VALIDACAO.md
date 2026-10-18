@@ -20,7 +20,7 @@ A interface renovada foi exercitada novamente em Firefox real com APIs simuladas
 
 ## Preservação e limites
 
-As regras, listas, CSS cosmético, políticas publicitárias e motor de reparo continuam iguais aos da base 0.6.2. Nos scripts MAIN do YouTube e pop-ups só mudou a versão. Nenhuma permissão foi adicionada. Não foi feita nova medição do Turtlecute, de RAM total ou de redução de CPU.
+As regras, listas, CSS cosmético, políticas publicitárias e motor de reparo continuam iguais aos da base 0.6.2. Nos scripts MAIN do YouTube e pop-ups só mudou a versão. Nenhuma permissão foi adicionada. Não foi feita medição de RAM total ou de redução de CPU. A medição do Turtlecute feita no CI é registrada abaixo e não equivale a uma garantia para toda publicidade.
 
 O foco não usa varredura periódica ou MutationObserver. Mantém três atributos e um controlador por aba, usa uma folha de estilo empacotada e reage a preferências e navegação. A aplicação explícita limita-se a 64 abas por ação e informa quando excede esse limite. Não há garantia para todos os layouts futuros do YouTube.
 
@@ -43,6 +43,22 @@ Os três últimos comandos exigem Playwright e Firefox no ambiente de QA. NAVEGA
 
 O teste instalado do Firefox usa --allow-system-access no geckodriver para acessar a interface da extensão em um perfil descartável, conforme o requisito do geckodriver atual. A opção não integra a extensão e não altera o navegador do usuário. O cenário de Chromium aguarda a prontidão do script de conteúdo e respeita a trava de outra janela legítima; um cenário instalado separado verifica a liberação do diálogo nativo sem outras janelas.
 
-No CI em Firefox 157, a extensão instalada passou no cenário de Mais foco em uma aba aberta antes da instalação, sob CSP restrita, preservando o conteúdo normal e restaurando os três grupos ao desligar. Os testes Chromium de cosméticos do YouTube, áudio e bloqueio real de rede também passaram. A rodada completa ainda precisa encerrar com sucesso para publicar o lançamento.
+No CI em Firefox 157, a extensão instalada passou no cenário de Mais foco em uma aba aberta antes da instalação, sob CSP restrita, preservando o conteúdo normal e restaurando os três grupos ao desligar. Os testes Chromium de cosméticos do YouTube, áudio e bloqueio real de rede também passaram. A rodada completa encerrou com sucesso no commit 8bf916d89f4cfbf817589afa8f482bf3af130ed5 e o lançamento foi publicado.
 
 O cenário de aviso genérico tinha um erro de transporte: HTML UTF-8 sem charset era interpretado com outra codificação, corrompendo a palavra anúncios. Com o mesmo content.js e notice-repair.js, o caso passou de not-found a repaired após corrigir somente o Content-Type da fixture. Os cenários servidos por Playwright agora declaram UTF-8. As requisições Firefox de controle usam o servidor local, comprovam acesso antes da instalação e novamente durante a pausa por site. O perfil descartável desativa o preload HSTS para esses hosts HTTP locais; essa preferência não faz parte do pacote.
+
+## Resultado final do CI e lançamento
+
+[Execução completa aprovada](https://github.com/RexJohnson679/navega-livre/actions/runs/39169475823), em 18/10/2026. O commit testado e o alvo do lançamento são 8bf916d89f4cfbf817589afa8f482bf3af130ed5. As atualizações deste relatório não alteram o código executável dos pacotes.
+
+- 127 testes Node, testes do publicador, builds e conferência byte a byte dos dois ZIPs: aprovados.
+- Chromium 156.0.8078.4 com extensão instalada: foco via controles reais do popup, CSP restrita, componentes recentes, reversão, YouTube, bloqueio real de rede, pausa, pop-ups, conteúdo preservado e reparo de diálogo nativo em domínio desconhecido: aprovados.
+- Firefox 157.0 com extensão instalada: foco em aba aberta antes da instalação, CSP restrita, componentes recentes, reversão, YouTube, anúncios e pop-ups em três páginas simuladas, raízes abertas e DNR com controle antes da instalação e durante a pausa: aprovados.
+- Turtlecute no Firefox 157.0: 126 de 132 requisições bloqueadas (95,45%); cosméticos estáticos e dinâmicos passaram. O resultado vale para essa execução, navegador e conjunto de testes. Não mede todos os formatos de anúncios nem consumo de memória.
+
+[Lançamento v0.7.1](https://github.com/RexJohnson679/navega-livre/releases/tag/v0.7.1) publicado com os pacotes de Chromium e Firefox, licença MIT e SHA256SUMS. Os digests informados pelo GitHub foram conferidos contra os pacotes validados:
+
+| Pacote | SHA-256 |
+| --- | --- |
+| Chromium | b3bb97e38e7b2d6c56e61daad46c98176aaf86e7df28224ba05d6154d6a321b0 |
+| Firefox | df3216dda88ff0c154e9d05d45db799a3a33d0ffef551f94af1409615393fdd6 |
