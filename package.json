@@ -1,6 +1,6 @@
 {
   "name": "navega-livre",
-  "version": "0.4.0",
+  "version": "0.7.1",
   "private": true,
   "license": "MIT",
   "description": "Extensão para navegadores focada em redução local de anúncios, ajustes no YouTube e reparo de avisos de adblock.",
@@ -10,6 +10,7 @@
   "scripts": {
     "test": "node extension/scripts/test.cjs",
     "build:chromium": "node extension/scripts/build.cjs chromium dist/chromium",
-    "build:firefox": "node extension/scripts/build.cjs firefox dist/firefox"
+    "build:firefox": "node extension/scripts/build.cjs firefox dist/firefox",
+    "verify:builds": "node extension/scripts/verify-builds.cjs"
   }
 }

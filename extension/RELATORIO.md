@@ -1,27 +1,42 @@
-# Revisão 0.4.0 — anúncios de página e pop-ups
+# Validação — Navega Livre 0.7.1
 
-## Evidência e correções
+Base funcional: 0.7.0 local, com o mesmo motor/listas de anúncios da 0.6.2. A versão 0.7.1 corrige a integração de Mais foco antes da sincronização pública.
 
-As imagens enviadas mostravam um anúncio flutuante e um diálogo pedindo instalar Ad Blocker Premium. Na inspeção pública do DOM do LycanToons, foram observados slots `ins.pubadx-slot`, frames A-Ads/PubADX e carregadores em `ppo.diveinthebluesky.biz`, `pa.diffgremio.com`, `acscdn.com` e `platform.pubadx.one`. O catálogo anterior não incluía essas quatro origens. Não foram copiados tokens, IDs de sessão, conteúdo de anúncios ou imagens do usuário para o repositório.
+## Defeitos reproduzidos e correção
 
-A nova proteção intercepta `window.open` no início da página, confere o destino escolhido em um clique e bloqueia diálogos de instalação falsos. Uma camada nativa identifica somente abas recém-criadas a partir de outra aba; destinos conhecidos de publicidade podem ser fechados nos primeiros 15 segundos. Não há fechamento por mensagem enviada pela página nem inspeção de abas preexistentes. Relações entre IDs e contadores são temporários e limitados.
+A implementação 0.7.0 salvava preferências, mas dependia de o content script já ter sido carregado na página. A atualização da extensão não garantia sua aplicação às abas previamente abertas. Usava também style inline; o código exato da 0.7.0 foi reproduzido em Firefox real sob uma política de estilos restrita: a tag era criada, mas os comentários continuavam visíveis.
 
-Os filtros visuais usam os mesmos domínios publicitários das regras de rede. Reconhecem slots, frames, imagens e links conhecidos, inclusive anúncios inseridos depois do carregamento. Um contêiner flutuante só é colapsado quando contém apenas o anúncio e controles simples de fechar; não se sobe para o leitor, artigo, navegação ou raiz da aplicação.
+O controlador novo é autocontido. O serviço salva a preferência e aplica o script e a folha de estilo empacotada nas abas de YouTube existentes. O CSS é declarativo nas páginas novas e usa scripting.insertCSS quando ausente em uma página já aberta. Um marcador de versão evita reinserções. Estado ativo, carregamento do CSS e erros aparecem no painel. Falha de aplicação não apaga a preferência.
 
-## Validação
+Foram acrescentados seletores para componentes recentes de Shorts, comentários em painel/chat e relacionados, incluindo variações móveis. As marcações são nomes de componentes, sem depender de texto traduzido. O teste público de HTML inicial não foi suficiente para confirmar todas as variações da interface ao vivo, portanto os cenários de DOM controlados e os testes instalados continuam essenciais.
 
-62 testes locais passaram na implementação. Há verificações específicas das APIs Chromium e Firefox, substituição por APIs compatíveis, pausa da página principal propagada para iframes, restauração de elementos, cliques falsos/automáticos, conservação de links e botões legítimos, diálogos normais, redirecionamentos de uma aba vazia e diagnóstico sem dados da página.
+## Testes locais
 
-A automação de publicação exige ainda:
+127 testes locais passaram. O serviço foi exercitado com os namespaces Chromium e Firefox, incluindo a diferença de caixa de CSSOrigin dos navegadores, aplicação em abas existentes, não duplicação do CSS, rejeição de mensagens de páginas e preservação da opção quando a injeção falha.
 
-1. Builds de Chromium e Firefox e conferência de todos os bytes de cada arquivo dentro dos ZIPs.
-2. Extensão instalada em Chromium: player, rede, pausa, avisos e painel; mais cenários de leitura, notícias e vídeo.
-3. Extensão instalada temporariamente em Firefox: scripts MAIN/isolados, banners, anúncios flutuantes e dinâmicos, frames, cliques com aba extra, links e botões normais e diálogo falso.
+Em Firefox 153 real, focus-application.firefox.e2e.cjs executou o background.js e focus.js reais, com adaptadores locais das primitivas de browser API. Duas abas inicialmente sem o controlador receberam o foco, inclusive uma com o legado 0.7.0. Sob CSP de estilos restrita, as três opções ocultaram componentes clássicos/recentes/móveis, preservaram conteúdo, vídeo e navegação normais e restauraram os elementos ao desligar. Cada aba recebeu o CSS uma vez; reinjeções não multiplicaram ouvintes. Pausa por hostname exato foi respeitada.
 
-O fluxo só libera a publicação se essas etapas passarem. Consulte o resultado do commit em GitHub Actions. Os cenários de navegador usam páginas locais controladas, com diferentes domínios e formatos. A inspeção do site real informou filtros; ela não equivale a instalar a nova extensão na conta/navegador do usuário. Não foi atribuída pontuação de benchmark nem garantia de remoção de todos os anúncios em sites reais.
+A interface renovada foi exercitada novamente em Firefox real com APIs simuladas. Esses cenários não instalam toda a extensão nem comprovam DNR/isolamento reais. O CI possui cenários separados com instalação real nos dois navegadores, agora incluindo os controles Mais foco e uma aba Firefox aberta antes de instalar o pacote. O resultado de CI deve ser consultado no commit publicado; não é apresentado como resultado local.
 
-## Compatibilidade
+## Preservação e limites
 
-Scripts MAIN compartilhados não recebem APIs privilegiadas. No Chromium, o build reúne catálogo, política e protetor de pop-ups em uma entrada própria para carregar todas as dependências no contexto da página sem depender dos scripts isolados. No Firefox, esses mesmos arquivos são registrados em sequência. As intervenções e o diagnóstico se referem explicitamente à janela da página, evitando confundir a janela com o global separado de scripts no Firefox. O teste do Firefox também verifica dados do player e leitura por WebDriver considerando seu sandbox. Preferências cruzam a fronteira do Firefox como texto JSON. O script recebe apenas o estado dessa página; fechamento de abas se baseia em eventos nativos e no catálogo local. A pausa desliga o comportamento nas abas já carregadas; recarregar aplica as regras às próximas requisições.
+As regras, listas, CSS cosmético, políticas publicitárias e motor de reparo continuam iguais aos da base 0.6.2. Nos scripts MAIN do YouTube e pop-ups só mudou a versão. Nenhuma permissão foi adicionada. Não foi feita nova medição do Turtlecute, de RAM total ou de redução de CPU.
 
-Aberturas assíncronas incomuns de um site podem precisar de uma exceção pelo controle de pop-ups. O Firefox continua com instalação temporária enquanto o pacote não for assinado. Os ajustes do player e os testes de regressão da 0.3.1 são mantidos.
+O foco não usa varredura periódica ou MutationObserver. Mantém três atributos e um controlador por aba, usa uma folha de estilo empacotada e reage a preferências e navegação. A aplicação explícita limita-se a 64 abas por ação e informa quando excede esse limite. Não há garantia para todos os layouts futuros do YouTube.
+
+Os pacotes e o código público não incluem o auxiliar privado, imagens do usuário, relatórios recebidos ou downloads de páginas usados na investigação. Os logs publicados são de fixtures neutras. Músicas permanecem fora do escopo. Pacotes sem assinatura de loja; publicação em Releases condicionada aos testes do workflow.
+
+## Reproduzir
+
+```sh
+npm test
+npm run build:chromium
+npm run build:firefox
+npm run verify:builds
+python3 .github/scripts/check_packages.py
+node extension/tests/renewal.firefox.e2e.cjs
+node extension/tests/focus-application.firefox.e2e.cjs
+node extension/tests/native-dialog.firefox.e2e.cjs
+```
+
+Os três últimos comandos exigem Playwright e Firefox no ambiente de QA. NAVEGA_QA_MODULES indica módulos alternativos. NAVEGA_FOCUS_BASELINE pode apontar para focus.js da 0.7.0 para o controle negativo de CSP. O processo de teste local usou MOZ_DISABLE_CONTENT_SANDBOX=1; isso não é uma configuração do pacote distribuído.

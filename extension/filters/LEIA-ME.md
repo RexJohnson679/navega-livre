@@ -15,7 +15,15 @@ O script `scripts/build.cjs` gera `rules/advertising.json`, `rules/privacy.json`
 
 O resumo gerado registra contagens, data e SHA-256 do snapshot local. Para atualizar, revise o arquivo-fonte e o catálogo, mantenha a atribuição/licença, gere novamente e rode os testes antes de distribuir outro pacote. A extensão instalada não contata o repositório.
 
-Estas listas não incluem o conjunto completo EasyList/EasyPrivacy nem a base do uBlock Origin. A quantidade de domínios indica o tamanho da base, não a porcentagem de anúncios removidos.
+## Revisão 0.5.0
+
+O build também usa snapshots de 18 arquivos do EasyList/EasyPrivacy e HaGeZi Light. `provenance.json` registra commit e hash Git de cada snapshot; o build recusa bytes que não correspondam ao hash. Material EasyList/EasyPrivacy e derivados conservam CC BY-SA 3.0; HaGeZi fica GPL-3.0 em `rules/privacy-extended.json`, com snapshot e licença completos. Código próprio do conversor permanece MIT.
+
+O subconjunto converte domínios e caminhos, tipos positivos/negativos de recursos, primeira/terceira parte, domínios de origem e exceções. Bloqueios importantes superam exceções de lista; a pausa explícita do usuário tem prioridade maior. Sintaxe não suportada, redirecionamentos e scriptlets são descartados e contados. Navegação principal é excluída. Não se trata de um motor ABP/uBlock completo.
+
+Seletores gerais geram CSS condicionado aos cosméticos, com exceções por host. Seletores de login, assinatura e avisos de adblock são excluídos desse CSS. Reparo de avisos permanece optativo. HaGeZi usa recursos de terceiros e segue a opção de privacidade.
+
+nap5k.com e n6wxm.com foram observados nos relatos e constam do EasyList. Não há regra exclusiva para o benchmark ou alteração de suas requisições/resultado. Contagens de domínios descrevem a base, não uma porcentagem de anúncios removidos.
 
 ## Revisão 0.4.0
 

@@ -4,13 +4,16 @@
   const P = globalThis.NavegaPopupPolicy;
   const W = typeof window === 'object' ? window : globalThis;
   if (!P || typeof W.__navegaLivrePopupState === 'function') return;
-  const VERSION = '0.4.0';
+  const VERSION = '0.7.1';
   let enabled = W.top === W;
   let gesture = null;
   const counters = {popupsBlocked: 0, linksBlocked: 0, dialogsBlocked: 0};
   const adFrame = P.adUrl(location.href);
   const nativeOpen = W.open;
   const now = () => performance.now();
+  // A real click stays valid for a short window so a handler that waits for fetch() or a
+  // timer before window.open() (sign-in, payment, share) still counts as user-initiated.
+  const GESTURE_TTL = 1200;
   const realElement = node => node && node.nodeType === 1;
   function clickedElement(event) {
     const path = typeof event.composedPath === 'function' ? event.composedPath() : [event.target];
@@ -19,8 +22,23 @@
       const anchor = node.closest?.('a[href],area[href]');
       if (anchor) return {href: anchor.getAttribute('href'), button: false, element: anchor};
       if (node.closest?.('button,[role="button"],input[type="button"],input[type="submit"],input[type="image"]')) return {href: null, button: true};
+      if (customControl(node)) return {href: null, button: true};
     }
     return {href: null, button: false};
+  }
+  // Script-driven controls built from div/span/svg show a pointer cursor. Page-sized
+  // layers do not count: full-screen click-capture overlays use the same cursor.
+  function customControl(node) {
+    if (node === document.body || node === document.documentElement || !node.getBoundingClientRect) return false;
+    try {
+      if (getComputedStyle(node).cursor !== 'pointer') return false;
+      // The cursor is inherited: only an element that sets it itself is a control. This stops
+      // a script that styles <body> with a pointer from turning every child into one.
+      const parent = node.parentElement;
+      if (parent && getComputedStyle(parent).cursor === 'pointer') return false;
+      const box = node.getBoundingClientRect();
+      return !(box.width >= innerWidth * 0.6 && box.height >= innerHeight * 0.6);
+    } catch { return false; }
   }
   function deceptiveOverlay(anchor) {
     if (!anchor?.getBoundingClientRect || (anchor.textContent || '').trim() ||
@@ -42,9 +60,7 @@
       counters.linksBlocked++;
       gesture = null;
     }
-    // Keep the gesture through native capture/bubble listeners. A microtask may
-    // run between those callbacks in a real browser and would reject normal buttons.
-    setTimeout(() => { gesture = null; }, 0);
+    // The gesture is kept until GESTURE_TTL passes or the next event replaces it.
   }
   for (const type of ['pointerdown', 'mousedown', 'touchend', 'click', 'auxclick']) {
     addEventListener(type, record, {capture: true, passive: false});
@@ -52,7 +68,7 @@
   if (typeof nativeOpen === 'function') W.open = function(...args) {
     const blocked = P.shouldBlockOpen(args[0], args[1], {
       enabled, base: location.href, adFrame, gesture,
-      fresh: Boolean(gesture && now() - gesture.time < 700 && navigator.userActivation?.isActive !== false)
+      fresh: Boolean(gesture && now() - gesture.time < GESTURE_TTL && navigator.userActivation?.isActive !== false)
     });
     if (blocked) { counters.popupsBlocked++; return null; }
     return Reflect.apply(nativeOpen, W, args);

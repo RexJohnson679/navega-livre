@@ -1,0 +1,24 @@
+EasyList / EasyPrivacy snapshots and derived filter data
+
+Attribution: The EasyList authors (https://easylist.to/).
+Original repository: https://github.com/easylist/easylist
+Original licence notice: https://easylist.to/pages/licence.html
+
+The EasyList repository offers its contents under GNU GPL v3 or later,
+or Creative Commons Attribution-ShareAlike 3.0 Unported or later.
+For this distribution, the snapshots and the filter data derived from them
+are distributed under Creative Commons Attribution-ShareAlike 3.0 Unported.
+
+Licence: https://creativecommons.org/licenses/by-sa/3.0/
+Legal code: https://creativecommons.org/licenses/by-sa/3.0/legalcode
+
+Changes by Navega Livre: offline conversion of a supported subset of network
+filters to declarativeNetRequest JSON, compression of equivalent domain rules,
+generation of scoped cosmetic CSS and exception metadata, and merging with
+the project's local domain catalogue. Unsupported syntax is skipped and counted.
+The original source snapshots are retained unchanged for review and rebuilding.
+
+This notice applies to filters/sources/easylist/, the EasyList/EasyPrivacy-derived
+material in rules/*.json, filter-data.js, popup-main-bundle.js,
+cosmetic-filters.css and cosmetic-data.js. MIT remains the licence of the
+project's own executable code; it does not replace the licence of this data.

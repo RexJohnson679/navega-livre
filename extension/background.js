@@ -1,8 +1,51 @@
 'use strict';
 if (typeof importScripts === 'function') {
-  importScripts('filter-info.js', 'common.js', 'filter-data.js', 'popup-policy.js');
+  importScripts('filter-info.js', 'common.js', 'preferences.js', 'filter-data.js', 'popup-policy.js');
 }
 const C = globalThis.NavegaCore;
+const T = globalThis.NavegaTools;
+const FOCUS_KEYS = ['focusShorts','focusComments','focusRelated'];
+function focusHost(url) { return ['youtube.com','www.youtube.com','m.youtube.com'].includes(C.normalizeHost(url || '')); }
+async function ensureFocus(tab) {
+  if (!Number.isInteger(tab?.id) || !focusHost(tab.url)) return {supported:false};
+  const scripting=browserApi.scripting;
+  await scripting.executeScript({target:{tabId:tab.id},world:'ISOLATED',files:['focus.js']});
+  const read=async()=>{
+    const results=await scripting.executeScript({target:{tabId:tab.id},world:'ISOLATED',func:()=>
+      globalThis.__navegaLivreFocusController?.reload() || {installed:false}});
+    if(results.some(item=>item.error))throw Error('Falha ao iniciar o foco nesta aba.');
+    const raw=results[0]?.result;
+    if(!raw?.installed || raw.error)throw Error(raw?.error || 'O controlador de foco não carregou.');
+    const safe={supported:true,installed:true,version:typeof raw.version==='string'?raw.version.slice(0,30):'',
+      active:raw.active===true,cssLoaded:raw.cssLoaded===true,loaded:raw.loaded===true};
+    for(const key of FOCUS_KEYS)safe[key]=raw[key]===true;
+    return safe;
+  };
+  let state=await read();
+  if(!state.cssLoaded){
+    // Firefox before 144 uses lowercase CSSOrigin; Chromium uses uppercase.
+    const origin=browserApi.runtime.getURL('').startsWith('moz-extension://')?'user':'USER';
+    await scripting.insertCSS({target:{tabId:tab.id},files:['focus.css'],origin});
+    state=await read();
+  }
+  if(!state.cssLoaded)throw Error('A folha de estilo de foco não foi aplicada.');
+  return state;
+}
+async function syncFocusTabs(priorityTabId) {
+  const result={applied:0,failed:0,limited:false};
+  if(!browserApi.tabs.query)return result;
+  const tabs=await browserApi.tabs.query({url:['*://youtube.com/*','*://www.youtube.com/*','*://m.youtube.com/*']});
+  const targets=new Map();
+  if(Number.isInteger(priorityTabId)){
+    try{const tab=await browserApi.tabs.get(priorityTabId);if(focusHost(tab.url))targets.set(tab.id,tab);}catch{}
+  }
+  for(const tab of tabs)if(Number.isInteger(tab.id)&&focusHost(tab.url))targets.set(tab.id,tab);
+  const selected=[...targets.values()];result.limited=selected.length>64;
+  for(const tab of selected.slice(0,64)){
+    try{await ensureFocus(tab);result.applied++;}catch{result.failed++;}
+  }
+  return result;
+}
 const P = globalThis.NavegaPopupPolicy;
 const browserApi = typeof browser !== 'undefined' ? browser : chrome;
 let youtubeRegistration = {active: false, error: null};
@@ -22,6 +65,10 @@ async function config() {
   const data = await browserApi.storage.local.get('config');
   return C.normalizeConfig(data ? data.config : {});
 }
+const RULESETS = ['advertising', 'privacy', 'privacyExtended'];
+let appliedKey = null;
+// Dynamic rules are a pure function of the host: comparing id and regex is enough to know whether a rewrite is needed.
+const ruleSignature = rules => rules.map(rule => rule.id + '|' + (rule.condition?.regexFilter || '')).sort().join('\n');
 
 async function applyRules(value) {
   let networkError = null;
@@ -29,12 +76,19 @@ async function applyRules(value) {
   if (!dnr) {
     networkState = {available: false, enabledRulesets: [], error: 'O bloqueio de rede não está disponível neste navegador.'};
   } else try {
+    // The worker re-applies the configuration every time it wakes up; skip calls that would change nothing.
+    const wanted = C.allowRules(value);
     const previous = await dnr.getDynamicRules();
-    await dnr.updateDynamicRules({removeRuleIds: previous.map(rule => rule.id), addRules: C.allowRules(value)});
+    if (ruleSignature(previous) !== ruleSignature(wanted)) {
+      await dnr.updateDynamicRules({removeRuleIds: previous.map(rule => rule.id), addRules: wanted});
+    }
     const enabled = C.enabledRulesets(value);
-    await dnr.updateEnabledRulesets({enableRulesetIds: enabled,
-      disableRulesetIds: ['advertising', 'privacy'].filter(id => !enabled.includes(id))});
-    const actual = await dnr.getEnabledRulesets();
+    let actual = await dnr.getEnabledRulesets();
+    if (RULESETS.some(id => enabled.includes(id) !== actual.includes(id))) {
+      await dnr.updateEnabledRulesets({enableRulesetIds: enabled.filter(id => !actual.includes(id)),
+        disableRulesetIds: RULESETS.filter(id => !enabled.includes(id) && actual.includes(id))});
+      actual = await dnr.getEnabledRulesets();
+    }
     networkState = {available: true, enabledRulesets: actual, error: null};
     if (enabled.some(id => !actual.includes(id))) throw new Error('Uma lista de bloqueio não foi ativada.');
   } catch (error) {
@@ -54,7 +108,12 @@ async function applyRules(value) {
   }
   await syncYoutubeScript(value);
   await syncPopupScript(value);
+  appliedKey = JSON.stringify(value);
   if (networkError) throw networkError;
+}
+// A preference is saved first; a failing rule update is reported in the panel but never loses the choice.
+async function applyKeepingChoice(value) {
+  try { await applyRules(value); } catch (error) { console.warn('[Navega Livre]', error?.message || error); }
 }
 
 async function syncPopupScript(value) {
@@ -77,7 +136,7 @@ async function syncPopupScript(value) {
     const mainFiles = browserApi.runtime.getURL('').startsWith('moz-extension://')
       ? ['filter-data.js', 'popup-policy.js', 'popup-main.js'] : ['popup-main-bundle.js'];
     const script = {id, matches: ['http://*/*', 'https://*/*'],
-      excludeMatches: value.disabledHosts.map(host => '*://' + host + '/*'),
+      excludeMatches: value.disabledHosts.filter(host => /^(?:[a-z0-9-]+\.)*[a-z0-9-]+$|^\[[0-9a-f:.]+\]$/i.test(host)).map(host => '*://' + host + '/*'),
       js: mainFiles, runAt: 'document_start',
       world: 'MAIN', allFrames: true, persistAcrossSessions: true};
     const current = existing[0];
@@ -85,11 +144,20 @@ async function syncPopupScript(value) {
     const unchanged = current && equal(current.matches, script.matches) && equal(current.excludeMatches, script.excludeMatches) &&
       equal(current.js, script.js) && current.runAt === script.runAt && current.world === script.world &&
       current.allFrames === true && current.persistAcrossSessions !== false;
-    if (!unchanged) {
-      if (current && typeof scripting.updateContentScripts === 'function') await scripting.updateContentScripts([script]);
+    const write = async next => {
+      if (current && typeof scripting.updateContentScripts === 'function') await scripting.updateContentScripts([next]);
       else {
         if (current) await scripting.unregisterContentScripts({ids: [id]});
-        await scripting.registerContentScripts([script]);
+        await scripting.registerContentScripts([next]);
+      }
+    };
+    if (!unchanged) {
+      // One rejected exclusion pattern must not switch the protection off everywhere: the page-side
+      // switch from the preferences bridge still pauses the paused hosts.
+      try { await write(script); }
+      catch (error) {
+        if (!script.excludeMatches.length) throw error;
+        await write({...script, excludeMatches: []});
       }
     }
     popupRegistration = {active: true, error: null};
@@ -185,18 +253,22 @@ async function init() {
   const value = await config();
   await browserApi.storage.local.set({config: value});
   await applyRules(value);
+  const data=await browserApi.storage.local.get('preferences');
+  if(FOCUS_KEYS.some(key=>T.normalize(data.preferences)[key]))await syncFocusTabs();
 }
 
 if (browserApi.runtime && browserApi.runtime.onInstalled) {
-  browserApi.runtime.onInstalled.addListener(() => serialize(init));
+  browserApi.runtime.onInstalled.addListener(() => serialize(init).catch(() => {}));
 }
 if (browserApi.runtime && browserApi.runtime.onStartup) {
-  browserApi.runtime.onStartup.addListener(() => serialize(init));
+  browserApi.runtime.onStartup.addListener(() => serialize(init).catch(() => {}));
 }
 if (browserApi.storage && browserApi.storage.onChanged) {
   browserApi.storage.onChanged.addListener((changes, area) => {
     if (area === 'local' && changes.config) {
-      serialize(() => applyRules(C.normalizeConfig(changes.config.newValue)));
+      const value = C.normalizeConfig(changes.config.newValue);
+      // Changes made through this worker were already applied; only external ones need work.
+      serialize(async () => { if (JSON.stringify(value) !== appliedKey) await applyRules(value); }).catch(() => {});
     }
   });
 }
@@ -250,6 +322,24 @@ async function handle(message, sender) {
     await queue;
     return {ok: true, config: await config(), network: networkState, popups: popupRegistration, filters: C.FILTER_INFO};
   }
+  if(message.type==='GET_FOCUS_DIAGNOSTIC'){
+    if(!Number.isInteger(message.tabId))return {ok:false,error:'Aba inválida.'};
+    const tab=await browserApi.tabs.get(message.tabId);
+    if(!focusHost(tab.url))return {ok:true,focus:{supported:false}};
+    try{return {ok:true,focus:await ensureFocus(tab)};}
+    catch(error){return {ok:true,focus:{supported:true,installed:false,error:String(error?.message||error).slice(0,160)}};}
+  }
+  if(message.type==='SET_FOCUS_OPTION'){
+    if(!FOCUS_KEYS.includes(message.key)||typeof message.value!=='boolean')return {ok:false,error:'Opção de foco inválida.'};
+    const preferences=await serialize(async()=>{
+      const data=await browserApi.storage.local.get('preferences');
+      const next=T.normalize({...T.normalize(data.preferences),[message.key]:message.value});
+      await browserApi.storage.local.set({preferences:next});return next;
+    });
+    let focusSync;
+    try{focusSync=await syncFocusTabs(message.tabId);}catch{focusSync={applied:0,failed:1,limited:false};}
+    return {ok:true,preferences,focusSync};
+  }
   if (message.type === 'GET_POPUP_DIAGNOSTIC') {
     await queue;
     const tab = await browserApi.tabs.get(message.tabId);
@@ -296,12 +386,34 @@ async function handle(message, sender) {
     return serialize(async () => {
       const value = await config();
       value[message.key] = message.value;
-      await applyRules(value);
       await browserApi.storage.local.set({config: value});
-      return {ok: true, config: value};
+      await applyKeepingChoice(value);
+      return {ok: true, config: value, network: networkState};
+    });
+  }
+  if (message.type === 'APPLY_BACKUP') {
+    const backup = T.readBackup(message.text);
+    const result=await serialize(async () => {
+      await browserApi.storage.local.set(backup);
+      await applyKeepingChoice(backup.config);
+      return {ok: true, ...backup, network: networkState};
+    });
+    try{result.focusSync=await syncFocusTabs();}catch{result.focusSync={applied:0,failed:1,limited:false};}
+    return result;
+  }
+  if (message.type === 'REMOVE_SITE_SETTING') {
+    if (!['disabledHosts', 'repairHosts'].includes(message.list) || typeof message.host !== 'string' ||
+        !message.host || C.normalizeHost(message.host) !== message.host) return {ok: false, error: 'Site inválido.'};
+    return serialize(async () => {
+      const value = await config();
+      value[message.list] = value[message.list].filter(host => host !== message.host);
+      await browserApi.storage.local.set({config: value});
+      await applyKeepingChoice(value);
+      return {ok: true, config: value, network: networkState};
     });
   }
   if (message.type === 'SET_SITE') {
+    if (!Number.isInteger(message.tabId)) return {ok: false, error: 'Aba inválida.'};
     const tab = await browserApi.tabs.get(message.tabId);
     const host = C.normalizeHost(tab.url);
     if (!host || typeof message.enabled !== 'boolean') return {ok: false, error: 'Abra um site HTTP ou HTTPS.'};
@@ -310,12 +422,13 @@ async function handle(message, sender) {
       value.disabledHosts = value.disabledHosts.filter(item => item !== host);
       if (!message.enabled) value.disabledHosts.push(host);
       value.disabledHosts.sort();
-      await applyRules(value);
       await browserApi.storage.local.set({config: value});
-      return {ok: true, config: value};
+      await applyKeepingChoice(value);
+      return {ok: true, config: value, network: networkState};
     });
   }
   if (message.type === 'SET_REPAIR') {
+    if (!Number.isInteger(message.tabId)) return {ok: false, error: 'Aba inválida.'};
     const tab = await browserApi.tabs.get(message.tabId);
     const host = C.normalizeHost(tab.url);
     if (!host || typeof message.enabled !== 'boolean') return {ok: false};
@@ -341,4 +454,4 @@ if (browserApi.runtime && browserApi.runtime.onMessage) {
     return true;
   });
 }
-serialize(async () => applyRules(await config()));
+serialize(async () => applyRules(await config())).catch(() => {});

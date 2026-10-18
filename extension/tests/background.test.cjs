@@ -5,25 +5,30 @@ const vm = require('node:vm');
 const path = require('node:path');
 const C = require('../common.js');
 const P = require('../popup-policy.js');
+const T = require('../preferences.js');
 async function workerFixture(options={}){
   const extensionOrigin=options.firefox?'moz-extension://fixture/':'chrome-extension://fixture/';
-  let config=C.normalizeConfig(),rules=[],enabled=['advertising','privacy'],installed,message,changed,registered=options.registered||[];
-  const scriptCalls=[],popupCalls=[],removed=[];
+  let config=C.normalizeConfig(options.config),preferences=T.normalize(),rules=[],enabled=['advertising','privacy'],installed,message,changed,registered=options.registered||[];
+  const scriptCalls=[],popupCalls=[],removed=[],focusCalls=[];
+  let focusInstalled=false,focusCss=false;
   const events={};
   const tabData=new Map([[7,{id:7,url:options.url||'https://example.test/path'}]]);
   const calls=[];const errors=[];
   const chrome={
     runtime:{getURL:p=>extensionOrigin+p,getManifest:()=>({version:C.FILTER_INFO.version}),onInstalled:{addListener:fn=>installed=fn},onStartup:{addListener(){}},onMessage:{addListener:fn=>message=fn}},
-    storage:{local:{get:async()=>({config}),set:async data=>{config=data.config;changed?.({config:{newValue:config}},'local');}},onChanged:{addListener:fn=>changed=fn}},
-    declarativeNetRequest:{getDynamicRules:async()=>rules,updateDynamicRules:async change=>{rules=change.addRules;calls.push(change);},updateEnabledRulesets:async change=>enabled=change.enableRulesetIds,getEnabledRulesets:async()=>{if(options.networkError)throw Error(options.networkError);return enabled;}},
+    storage:{local:{get:async()=>({config,preferences}),set:async data=>{if(data.preferences)preferences=data.preferences;if(data.config){config=data.config;changed?.({config:{newValue:config}},'local');}}},onChanged:{addListener:fn=>changed=fn}},
+    declarativeNetRequest:{getDynamicRules:async()=>rules,updateDynamicRules:async change=>{rules=change.addRules;calls.push(change);},updateEnabledRulesets:async change=>{enabled=[...enabled.filter(id=>!change.disableRulesetIds.includes(id)),...change.enableRulesetIds.filter(id=>!enabled.includes(id))];},getEnabledRulesets:async()=>{if(options.networkError)throw Error(options.networkError);return enabled;}},
     action:{setBadgeText:async()=>{},setBadgeBackgroundColor:async()=>{}},
-    tabs:{get:async id=>tabData.get(id)||({id,url:options.url||'https://example.test/path'}),sendMessage:async()=>({noticesHidden:0}),
+    tabs:{query:async()=>[...tabData.values()],get:async id=>tabData.get(id)||({id,url:options.url||'https://example.test/path'}),sendMessage:async()=>({noticesHidden:0}),
       remove:async id=>removed.push(id),onUpdated:{addListener:fn=>events.updated=fn},onRemoved:{addListener:fn=>events.removed=fn}},
     webNavigation:{onCreatedNavigationTarget:{addListener:fn=>events.created=fn},onBeforeNavigate:{addListener:fn=>events.navigate=fn}},
-    scripting:{executeScript:async({func})=>[{result:vm.runInNewContext('('+func.toString()+')()',{
+    scripting:{insertCSS:async details=>{if(options.focusError)throw Error(options.focusError);focusCss=true;focusCalls.push({type:'css',...details});},executeScript:async({func,files,target,world})=>{
+      if(files){if(options.focusError)throw Error(options.focusError);focusInstalled=true;focusCalls.push({type:'script',files,target,world});return[{result:{}}];}
+      return[{result:await vm.runInNewContext('('+func.toString()+')()',{
+      ...(focusInstalled?{__navegaLivreFocusController:{reload:async()=>({installed:true,loaded:true,active:C.active(config,C.normalizeHost(tabData.get(target?.tabId)?.url||'')),version:'0.7.1',cssLoaded:focusCss,...preferences})}}:{}),
       ...(options.mainState?{__navegaLivreYoutubeState:()=>options.mainState}:{}),
       ...(options.popupState?{__navegaLivrePopupState:()=>options.popupState}:{})
-    })}],getRegisteredContentScripts:async({ids})=>registered.filter(s=>ids.includes(s.id)),
+    })}];},getRegisteredContentScripts:async({ids})=>registered.filter(s=>ids.includes(s.id)),
       registerContentScripts:async scripts=>{
         if(options.registrationError)throw new Error(options.registrationError);
         for(const script of scripts){if(registered.some(s=>s.id===script.id))throw Error('Duplicate registration');
@@ -37,13 +42,13 @@ async function workerFixture(options={}){
       unregisterContentScripts:async({ids})=>{for(const id of ids)(id==='navega-youtube-main'?scriptCalls:popupCalls).push('unregister');registered=registered.filter(s=>!ids.includes(s.id));}}
   };
   if(options.noUpdateApi)delete chrome.scripting.updateContentScripts;
-  const context=vm.createContext({NavegaCore:C,NavegaPopupPolicy:P,importScripts(){},...(options.firefox ? {browser:chrome,chrome:{}} : {chrome}),console:{error:(...args)=>errors.push(args),warn(){}},URL});
+  const context=vm.createContext({NavegaCore:C,NavegaTools:T,NavegaPopupPolicy:P,importScripts(){},...(options.firefox ? {browser:chrome,chrome:{}} : {chrome}),console:{error:(...args)=>errors.push(args),warn(){}},URL});
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../background.js'),'utf8'),context);
   await new Promise(resolve=>setImmediate(resolve));
   async function send(data,sender={url:extensionOrigin+'popup.html'}){
     return new Promise(resolve=>message(data,sender,resolve));
   }
-  return{send,installed,calls,scriptCalls,popupCalls,errors,events,removed,tabData,state:()=>({config,rules,enabled,registered})};
+  return{send,installed,calls,scriptCalls,popupCalls,focusCalls,errors,events,removed,tabData,state:()=>({config,preferences,rules,enabled,registered})};
 }
 test('worker serializes settings, installs exact-host exceptions and disables network rules',async()=>{
   const f=await workerFixture();
@@ -63,7 +68,7 @@ test('Firefox namespace enables real rule resources and the MAIN script at docum
   const f=await workerFixture({firefox:true});
   const result=await f.send({type:'GET_CONFIG'});
   assert.equal(result.network.available,true);assert.equal(result.network.error,null);
-  assert.deepEqual([...result.network.enabledRulesets],['advertising','privacy']);
+  assert.deepEqual([...result.network.enabledRulesets],['advertising','privacy','privacyExtended']);
   assert.equal(f.state().registered[0].world,'MAIN');assert.equal(f.state().registered[0].runAt,'document_start');
   await f.send({type:'SET_OPTION',key:'privacy',value:false});
   assert.deepEqual([...f.state().enabled],['advertising']);
@@ -173,11 +178,53 @@ for(const firefox of [false,true]) {
   });
 }
 test('popup diagnostics sanitize page data, and page senders cannot close tabs or read privileged diagnostics',async()=>{
-  const f=await workerFixture({popupState:{installed:true,enabled:true,version:'0.4.0',popupsBlocked:4,linksBlocked:2,dialogsBlocked:Infinity,secret:'private-token'}});
+  const f=await workerFixture({popupState:{installed:true,enabled:true,version:'0.5.0',popupsBlocked:4,linksBlocked:2,dialogsBlocked:Infinity,secret:'private-token'}});
   const result=await f.send({type:'GET_POPUP_DIAGNOSTIC',tabId:7});
   assert.equal(result.main.popupsBlocked,4);assert.equal(result.main.dialogsBlocked,0);
   assert.equal(JSON.stringify(result).includes('private-token'),false);
   assert.equal((await f.send({type:'GET_POPUP_DIAGNOSTIC',tabId:7},{tab:{id:7,url:'https://example.test/'}})).ok,false);
   assert.equal((await f.send({type:'CLOSE_TAB',tabId:7},{tab:{id:7,url:'https://example.test/'}})).ok,false);
   assert.equal(f.removed.length,0);
+});
+for(const firefox of [false,true])test(`${firefox?'Firefox':'Chromium'} backup import applies local preferences and exact-host exceptions together`,async()=>{
+  const f=await workerFixture({firefox});
+  const text=JSON.stringify(T.createBackup(C.normalizeConfig({disabledHosts:['read.example'],repairHosts:['notice.example']}),{theme:'light',focusShorts:true},'0.7.0'));
+  const result=await f.send({type:'APPLY_BACKUP',text});assert.equal(result.ok,true);
+  assert.deepEqual([...f.state().config.disabledHosts],['read.example']);assert.equal(f.state().preferences.theme,'light');
+  assert.equal(f.state().preferences.focusShorts,true);assert.ok(f.state().rules[0].condition.regexFilter.includes('read'));
+  const denied=await f.send({type:'APPLY_BACKUP',text},{url:'https://page.example/',tab:{id:7,url:'https://page.example/'}});
+  assert.equal(denied.ok,false);
+});
+test('invalid backups do not change preferences, and a network error does not discard an imported choice',async()=>{
+  const f=await workerFixture({networkError:'Offline fixture'});
+  const invalid=await f.send({type:'APPLY_BACKUP',text:'{"format":"unknown"}'});assert.equal(invalid.ok,false);assert.equal(f.state().config.enabled,true);
+  const text=JSON.stringify(T.createBackup(C.normalizeConfig({enabled:false}),{theme:'dark'},'0.7.0'));
+  const result=await f.send({type:'APPLY_BACKUP',text});assert.equal(result.ok,true);assert.equal(f.state().config.enabled,false);
+  assert.equal(f.state().preferences.theme,'dark');assert.equal(result.network.error,'Offline fixture');
+});
+test('the site manager removes only the chosen exact-host preference and rejects arbitrary storage keys',async()=>{
+  const f=await workerFixture({config:{disabledHosts:['example.test','other.example.test'],repairHosts:['example.test']}});
+  assert.equal((await f.send({type:'REMOVE_SITE_SETTING',list:'disabledHosts',host:'example.test'})).ok,true);
+  assert.deepEqual([...f.state().config.disabledHosts],['other.example.test']);assert.deepEqual([...f.state().config.repairHosts],['example.test']);
+  assert.equal((await f.send({type:'REMOVE_SITE_SETTING',list:'__proto__',host:'example.test'})).ok,false);
+  assert.equal((await f.send({type:'REMOVE_SITE_SETTING',list:'repairHosts',host:'https://example.test/path'})).ok,false);
+});
+for(const firefox of [false,true])test(`${firefox?'Firefox':'Chromium'} focus installs into already-open YouTube tabs and does not duplicate CSS`,async()=>{
+  const f=await workerFixture({firefox,url:'https://www.youtube.com/watch?v=fixture'});await f.send({type:'GET_CONFIG'});
+  const rules=f.calls.length;
+  const result=await f.send({type:'SET_FOCUS_OPTION',key:'focusComments',value:true,tabId:7});
+  assert.equal(result.ok,true);assert.equal(result.focusSync.applied,1);assert.equal(f.state().preferences.focusComments,true);
+  assert.equal(f.focusCalls[0].files[0],'focus.js');assert.equal(f.focusCalls[0].world,'ISOLATED');
+  const sheets=f.focusCalls.filter(x=>x.type==='css');assert.equal(sheets.length,1);assert.equal(sheets[0].origin,firefox?'user':'USER');
+  await f.send({type:'SET_FOCUS_OPTION',key:'focusRelated',value:true});
+  assert.equal(f.focusCalls.filter(x=>x.type==='css').length,1);assert.equal(f.calls.length,rules);
+  const diagnostic=await f.send({type:'GET_FOCUS_DIAGNOSTIC',tabId:7});assert.equal(diagnostic.focus.cssLoaded,true);
+});
+test('focus rejects page senders and invalid options and reports a failed application without losing the choice',async()=>{
+  const f=await workerFixture({url:'https://www.youtube.com/watch',focusError:'Cannot inject fixture'});
+  assert.equal((await f.send({type:'SET_FOCUS_OPTION',key:'focusComments',value:true},{url:'https://page.test',tab:{id:7,url:'https://page.test'}})).ok,false);
+  assert.equal((await f.send({type:'SET_FOCUS_OPTION',key:'enabled',value:false})).ok,false);
+  const result=await f.send({type:'SET_FOCUS_OPTION',key:'focusComments',value:true});assert.equal(result.ok,true);assert.equal(result.focusSync.failed,1);
+  assert.equal(f.state().preferences.focusComments,true);
+  assert.match((await f.send({type:'GET_FOCUS_DIAGNOSTIC',tabId:7})).focus.error,/Cannot inject/);
 });

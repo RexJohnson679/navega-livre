@@ -7,9 +7,9 @@ const P=require('../popup-policy.js');
 const C=require('../common.js');
 const source=fs.readFileSync(path.join(__dirname,'../popup-main.js'),'utf8');
 function fixture({host='reader.example',frame=false}={}) {
-  const listeners={},docListeners={},calls=[],dialogs=[],microtasks=[];
+  const listeners={},docListeners={},calls=[],dialogs=[],microtasks=[];let clock=1000;
   const context=vm.createContext({NavegaPopupPolicy:P,location:{href:'https://'+host+'/',hostname:host},
-    performance:{now:()=>1000},navigator:{userActivation:{isActive:true}},setTimeout:fn=>microtasks.push(fn),URL,
+    performance:{now:()=>clock},navigator:{userActivation:{isActive:true}},setTimeout:fn=>microtasks.push(fn),URL,
     innerWidth:1000,innerHeight:800,getComputedStyle:node=>node.style,
     open:(...args)=>(calls.push(args),{closed:false}),alert:text=>dialogs.push(text),confirm:text=>(dialogs.push(text),true),prompt:text=>(dialogs.push(text),'input'),
     addEventListener:(name,fn)=>listeners[name]=fn,
@@ -26,7 +26,7 @@ function fixture({host='reader.example',frame=false}={}) {
     while(microtasks.length)microtasks.shift()();
     return {result,prevented};
   }
-  return {context,calls,dialogs,click,state:()=>context.__navegaLivrePopupState(),
+  return {context,calls,dialogs,click,advance:ms=>clock+=ms,state:()=>context.__navegaLivrePopupState(),
     enabled:value=>docListeners['navega-livre-popup-config']({detail:JSON.stringify({enabled:value})})};
 }
 test('network classification covers observed ads across sites without URL-string lookalike matches',()=>{
@@ -68,7 +68,7 @@ test('invisible external links covering the screen are stopped, while normal lin
 test('synthetic events and stale gestures do not grant script popup permission',()=>{
   const f=fixture();
   assert.equal(f.click('button',()=>f.context.open('https://normal.example/'),{trusted:false}).result,null);
-  f.click('button');assert.equal(f.context.open('https://normal.example/'),null);
+  f.click('button');f.advance(1201);assert.equal(f.context.open('https://normal.example/'),null);
   assert.equal(f.click('button',()=>f.click('link',()=>f.context.open('https://normal.example/'),{trusted:false,href:'https://normal.example/'}).result).result,null);
   assert.equal(f.calls.length,0);
 });

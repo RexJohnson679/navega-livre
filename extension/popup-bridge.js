@@ -16,7 +16,7 @@
   api.storage.onChanged.addListener((changes, area) => {
     if (area === 'local' && changes.config) { settings = C.normalizeConfig(changes.config.newValue); ready = true; send(); }
   });
-  if (!frameReady) api.runtime.sendMessage({type: 'FRAME_CONTEXT'}).then(result => {
-    if (result?.ok && result.host) { topHost = result.host; frameReady = true; send(); }
-  }).catch(() => {});
+  if (!frameReady) C.frameContext(api).then(host => {
+    if (host) { topHost = host; frameReady = true; send(); }
+  });
 })();

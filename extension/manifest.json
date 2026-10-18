@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Navega Livre",
-  "version": "0.4.0",
+  "version": "0.7.1",
   "minimum_chrome_version": "120",
   "description": "Bloqueio local de publicidade e rastreadores, ajustes do YouTube e avisos de bloqueador em sites compatíveis.",
   "permissions": [
@@ -59,13 +59,31 @@
         "popup-bridge.js",
         "filter-data.js",
         "popup-policy.js",
+        "cosmetic-data.js",
+        "notice-policy.js",
+        "notice-repair.js",
         "content.js"
       ],
       "css": [
-        "cosmetic.css"
+        "cosmetic.css",
+        "cosmetic-filters.css"
       ],
       "run_at": "document_start",
       "all_frames": true
+    },
+    {
+      "matches": [
+        "*://youtube.com/*",
+        "*://www.youtube.com/*",
+        "*://m.youtube.com/*"
+      ],
+      "js": [
+        "focus.js"
+      ],
+      "css": [
+        "focus.css"
+      ],
+      "run_at": "document_idle"
     }
   ],
   "declarative_net_request": {
@@ -79,7 +97,16 @@
         "id": "privacy",
         "enabled": true,
         "path": "rules/privacy.json"
+      },
+      {
+        "id": "privacyExtended",
+        "enabled": true,
+        "path": "rules/privacy-extended.json"
       }
     ]
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
   }
 }

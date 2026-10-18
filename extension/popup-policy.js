@@ -18,6 +18,11 @@
     return false;
   }
   function key(parsed) { return parsed.origin + parsed.pathname + parsed.search; }
+  // href="#", href="" and javascript: links only run script: they are controls, not destinations.
+  function navigating(value) {
+    const text = String(value ?? '').trim();
+    return text !== '' && !text.startsWith('#') && !/^javascript:/i.test(text);
+  }
   function shouldBlockOpen(value, target, context) {
     if (!context.enabled) return false;
     if (adUrl(value, context.base) || context.adFrame) return true;
@@ -26,20 +31,21 @@
     const destination = url(value || 'about:blank', context.base);
     const gesture = context.gesture;
     if (!gesture?.trusted || !context.fresh) return true;
-    if (gesture.href) {
+    if (navigating(gesture.href)) {
       const expected = url(gesture.href, context.base);
       // An ad listener must not open a different destination over a real link click.
       return !destination || !expected || key(destination) !== key(expected);
     }
-    // Explicit buttons may open share, authentication, download and print windows.
-    return !gesture.button;
+    // Buttons, custom controls and script-only links may open share, authentication,
+    // download and print windows. A click on plain page area may not.
+    return !(gesture.button || (gesture.href !== null && gesture.href !== undefined));
   }
   function installBait(text) {
     const value = String(text || '').replace(/\s+/g, ' ').slice(0, 1500);
     return /(?:instal(?:e|ar|l)|install|download|baixe|atualiz(?:e|ar)|update)[\s\S]{0,100}(?:ad\s*block(?:er)?|bloqueador\s+de\s+an[uú]ncios)/i.test(value) &&
       /desbloque|unlock|continu(?:e|ar)|premium|required|necess[aá]rio|obrigat[oó]ri/i.test(value);
   }
-  const policy = Object.freeze({adUrl, shouldBlockOpen, installBait});
+  const policy = Object.freeze({adUrl, shouldBlockOpen, installBait, navigating});
   globalThis.NavegaPopupPolicy = policy;
   if (typeof module !== 'undefined' && module.exports) module.exports = policy;
 })();

@@ -38,7 +38,7 @@ async function fixture(host, config, selectors={}, options={}) {
   const events=[];let observing=false;
   const document={documentElement,body,querySelectorAll:s=>selectors[s]||[],querySelector:s=>(selectors[s]||[])[0]||null,createElement:()=>new Node(),addEventListener(){},dispatchEvent(event){events.push(event);}};
   const api={storage:{local:{get:async()=>({config})},onChanged:{addListener:fn=>changed=fn}},runtime:{onMessage:{addListener:fn=>message=fn},sendMessage:async data=>(sent.push(data),data.type==='FRAME_CONTEXT'?{ok:true,host:options.topHost}:{ok:true,repaired:true})}};
-  const context=vm.createContext({NavegaCore:C,NavegaPopupPolicy:P,URL,location:{hostname:host,href:'https://'+host+'/'},document,
+  const context=vm.createContext({NavegaCore:C,NavegaPopupPolicy:P,URL,performance,location:{hostname:host,href:'https://'+host+'/'},document,
     getComputedStyle:node=>({display:node.hasAttribute('data-navega-livre-hidden')?'none':'block',visibility:'visible',position:node.position}),
     MutationObserver:class{observe(){observing=true;}disconnect(){observing=false;}},setTimeout:()=>1,clearTimeout(){},setInterval:fn=>(interval=fn,1),clearInterval:()=>interval=null,
     Date:{now:()=>now},addEventListener(){},console,CustomEvent:class{constructor(type,options){this.type=type;this.detail=options?.detail}},

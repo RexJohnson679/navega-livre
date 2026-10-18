@@ -8,3 +8,11 @@ playwright-report/
 Thumbs.db
 __pycache__/
 *.py[cod]
+
+# Diagnósticos e auxiliar privados não integram o projeto público.
+/navega-livre-auxiliar/
+/auxiliar/
+/upload/
+/relatorios/
+/diagnostics/
+navega-livre-aviso-*

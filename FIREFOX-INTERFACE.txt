@@ -1,0 +1,1 @@
+PASS_RENEWAL_FIREFOX_UI {"browser":"153.0","scenarios":["popup","preferences","youtube-focus"],"scope":"Real DOM and UI with local API fixtures; no complete add-on installation"}

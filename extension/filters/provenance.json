@@ -1,0 +1,108 @@
+{
+  "easylist": {
+    "repository": "https://github.com/easylist/easylist",
+    "commit": "87c18833d77be8381cb71ed87ce06ad419b52081",
+    "license": "CC-BY-SA-3.0",
+    "files": [
+      {
+        "path": "easylist/easylist_adservers.txt",
+        "localPath": "sources/easylist/easylist_adservers.txt",
+        "gitBlobSha": "a31120200390cc31acbbc99adfadafe33ecc8a6a"
+      },
+      {
+        "path": "easylist/easylist_adservers_popup.txt",
+        "localPath": "sources/easylist/easylist_adservers_popup.txt",
+        "gitBlobSha": "2c4aa5d917509d2be53de803a0add1ec0470f953"
+      },
+      {
+        "path": "easylist/easylist_general_hide.txt",
+        "localPath": "sources/easylist/easylist_general_hide.txt",
+        "gitBlobSha": "59657a4b55a205d7018ce8fefbcef57e2e53b39b"
+      },
+      {
+        "path": "easylist/easylist_allowlist_general_hide.txt",
+        "localPath": "sources/easylist/easylist_allowlist_general_hide.txt",
+        "gitBlobSha": "71ce6580f0ea9d12d58dd86ba71d1680eb1c7f56"
+      },
+      {
+        "path": "easyprivacy/easyprivacy_trackingservers.txt",
+        "localPath": "sources/easylist/easyprivacy_trackingservers.txt",
+        "gitBlobSha": "db0e0f07e684dd67a0f2ccd2e98d0ad85f52db75"
+      },
+      {
+        "path": "easyprivacy/easyprivacy_trackingservers_general.txt",
+        "localPath": "sources/easylist/easyprivacy_trackingservers_general.txt",
+        "gitBlobSha": "5d1bb20eeb36459636656c0514c6cca0c8fce744"
+      },
+      {
+        "path": "easyprivacy/easyprivacy_trackingservers_international.txt",
+        "localPath": "sources/easylist/easyprivacy_trackingservers_international.txt",
+        "gitBlobSha": "30f619393a010ae527bd3ac5de24ca8bf8c37401"
+      },
+      {
+        "path": "easyprivacy/easyprivacy_trackingservers_thirdparty.txt",
+        "localPath": "sources/easylist/easyprivacy_trackingservers_thirdparty.txt",
+        "gitBlobSha": "e2b7dd6d5c7d87aa012d0c29015d925a2e39e9f5"
+      },
+      {
+        "path": "easylist/easylist_allowlist.txt",
+        "localPath": "sources/easylist/easylist_allowlist.txt",
+        "gitBlobSha": "b5252c1eb3a18f718f9dd889a0c3859f208e0cce"
+      },
+      {
+        "path": "easyprivacy/easyprivacy_allowlist.txt",
+        "localPath": "sources/easylist/easyprivacy_allowlist.txt",
+        "gitBlobSha": "9e0051440422724dad047227571e6855bc785929"
+      },
+      {
+        "path": "easyprivacy/easyprivacy_allowlist_international.txt",
+        "localPath": "sources/easylist/easyprivacy_allowlist_international.txt",
+        "gitBlobSha": "025273391e94086183253a72c2c9f9809bd37b9f"
+      },
+      {
+        "path": "easylist/easylist_general_block.txt",
+        "localPath": "sources/easylist/easylist_general_block.txt",
+        "gitBlobSha": "d22b0f8bd84898c572f9ab5dbd680dafb812d41f"
+      },
+      {
+        "path": "easylist/easylist_general_block_popup.txt",
+        "localPath": "sources/easylist/easylist_general_block_popup.txt",
+        "gitBlobSha": "ab7427bab4a98cfd4eb67fb745a1f5cec098380a"
+      },
+      {
+        "path": "easyprivacy/easyprivacy_general.txt",
+        "localPath": "sources/easylist/easyprivacy_general.txt",
+        "gitBlobSha": "adc8edf17ff0ef8cb60e0c822f283cacf0d76d9a"
+      },
+      {
+        "path": "easyprivacy/easyprivacy_thirdparty.txt",
+        "localPath": "sources/easylist/easyprivacy_thirdparty.txt",
+        "gitBlobSha": "fd01fb9cf321619633c867e639b2f998bf5a531c"
+      },
+      {
+        "path": "easyprivacy/easyprivacy_thirdparty_international.txt",
+        "localPath": "sources/easylist/easyprivacy_thirdparty_international.txt",
+        "gitBlobSha": "76d056ffff5a55fb7ae28f88bab86b4cf1977271"
+      },
+      {
+        "path": "easyprivacy/easyprivacy_specific.txt",
+        "localPath": "sources/easylist/easyprivacy_specific.txt",
+        "gitBlobSha": "231b3b9083b4ce08ede32732f49bff0fe3ae423d"
+      },
+      {
+        "path": "easyprivacy/easyprivacy_specific_international.txt",
+        "localPath": "sources/easylist/easyprivacy_specific_international.txt",
+        "gitBlobSha": "022fd38547d9400aa6a234831dbb71d4349e69b6"
+      }
+    ]
+  },
+  "hagezi": {
+    "repository": "https://github.com/hagezi/dns-blocklists",
+    "commit": "de63c7d7a278dad3339aa24033ff1a4dabc592f5",
+    "source": "adblock/light.txt",
+    "localPath": "sources/hagezi-light.txt",
+    "gitBlobSha": "6308909fe15d9dd834c9991541f9113bd1d1443a",
+    "license": "GPL-3.0"
+  },
+  "snapshotDateUTC": "2026-10-15"
+}

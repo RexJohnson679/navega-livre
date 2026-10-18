@@ -1,6 +1,6 @@
 {
   "name": "navega-livre",
-  "version": "0.4.0",
+  "version": "0.7.1",
   "private": true,
   "description": "Extensão local de bloqueio e ajustes de publicidade",
   "engines": {

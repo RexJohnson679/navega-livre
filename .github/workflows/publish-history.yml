@@ -38,13 +38,21 @@ jobs:
           npm test
           npm run build:chromium
           npm run build:firefox
+          npm run verify:builds
           python3 .github/scripts/check_packages.py
       - name: Preparar ferramentas oficiais de teste
         id: tools
         run: |
           npm install --prefix "$RUNNER_TEMP/navega-qa" --no-audit --no-fund playwright@1.64.0
-          "$RUNNER_TEMP/navega-qa/node_modules/.bin/playwright" install --with-deps chromium
+          "$RUNNER_TEMP/navega-qa/node_modules/.bin/playwright" install --with-deps chromium firefox
           python3 -m pip install --disable-pip-version-check selenium==4.51.0
+      - name: Verificar interface, foco e reparo em Firefox real
+        env:
+          NAVEGA_QA_MODULES: ${{ runner.temp }}/navega-qa/node_modules
+        run: |
+          node extension/tests/renewal.firefox.e2e.cjs
+          node extension/tests/native-dialog.firefox.e2e.cjs
+          node extension/tests/focus-application.firefox.e2e.cjs
       - name: Testar extensão instalada no Chromium
         env:
           NAVEGA_QA_MODULES: ${{ runner.temp }}/navega-qa/node_modules
@@ -57,7 +65,7 @@ jobs:
         env:
           NAVEGA_EXTENSION_DIR: dist/firefox
         run: |
-          printf '%s\n' '127.0.0.1 reader.navega.test news.navega.test video.navega.test normal.navega.test ad.a-ads.com www.youtube.com' | sudo tee -a /etc/hosts >/dev/null
+          printf '%s\n' '127.0.0.1 reader.navega.test news.navega.test video.navega.test normal.navega.test ad.a-ads.com www.youtube.com lycantoons.com vegitoons.black' | sudo tee -a /etc/hosts >/dev/null
           python3 extension/tests/firefox.e2e.py
   publish:
     needs: verify

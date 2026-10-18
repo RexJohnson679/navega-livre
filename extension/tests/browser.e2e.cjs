@@ -57,7 +57,8 @@ const knownFixture = `<!doctype html><html><body>
       }
       throw Error('Extension failed to initialize');
     });
-    await context.route('https://www.youtube.com/**', route => route.fulfill({contentType: 'text/html', body: youtubeFixture}));
+    await context.route('https://www.youtube.com/**', route => route.fulfill({contentType: 'text/html', body:
+      new URL(route.request().url()).pathname==='/navega-focus'?fs.readFileSync(path.join(__dirname,'fixtures/focus.html'),'utf8'):youtubeFixture}));
     await context.route('https://fixtures.example.test/**', route => route.fulfill({contentType: 'text/html', body: genericFixture}));
     await context.route('https://tavvkkj.xyz/**', route => route.fulfill({contentType: 'text/html', body: knownFixture}));
     await context.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({contentType: 'text/plain', headers: {'access-control-allow-origin': '*'}, body: 'ad'}));
@@ -150,6 +151,16 @@ const knownFixture = `<!doctype html><html><body>
     console.log('PASS sanitized, user-triggered diagnostic download');
     await popup.setViewportSize({width: 390, height: 900});
     await popup.screenshot({path: path.join(os.tmpdir(), 'navega-livre-popup.png'), fullPage: true});
+    const focusPage=await context.newPage();await focusPage.goto('https://www.youtube.com/navega-focus');
+    await popup.locator('#tab-youtube').click();
+    for(const [key,selector]of [['focusComments','#comments-modern'],['focusShorts','#short-modern'],['focusRelated','#related-modern']]){
+      await popup.locator('#'+key).check();await focusPage.locator(selector).waitFor({state:'hidden'});
+    }
+    for(const selector of ['#comments','#comments-modern','#comments-mobile','#chat','#short-modern','#short-mobile','#related-modern','#related-mobile'])assert.equal(await focusPage.locator(selector).isVisible(),false,selector);
+    for(const selector of ['#normal','#header','#player','#normal-video'])assert.equal(await focusPage.locator(selector).isVisible(),true,selector);
+    for(const key of ['focusComments','focusShorts','focusRelated'])await popup.locator('#'+key).uncheck();
+    for(const selector of ['#comments-modern','#short-modern','#related-modern'])await focusPage.locator(selector).waitFor({state:'visible'});
+    await focusPage.close();console.log('PASS installed Chromium popup focus actions, strict style CSP, modern markup and restoration');
     await popup.locator('#tab-general').click();
     await popup.locator('#enabled').uncheck();
     await worker.evaluate(async () => {

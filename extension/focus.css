@@ -1,0 +1,33 @@
+/* Packaged stylesheet: declarative loading or scripting.insertCSS, never inline. */
+:root{--navega-livre-focus-version:nl-071}
+:root[data-navega-livre-focus-shorts="on"] :is(
+  ytd-reel-shelf-renderer,
+  ytd-rich-shelf-renderer[is-shorts],
+  ytd-rich-section-renderer:has(ytd-rich-shelf-renderer[is-shorts]),
+  ytd-rich-section-renderer:has(ytm-shorts-lockup-view-model),
+  ytm-reel-shelf-renderer,
+  ytm-shorts-lockup-view-model,
+  yt-shorts-lockup-view-model,
+  yt-lockup-view-model:has(a[href^="/shorts/"]),
+  ytd-rich-item-renderer:has(a[href^="/shorts/"]),
+  ytd-guide-entry-renderer:has(a[href^="/shorts"]),
+  ytd-mini-guide-entry-renderer:has(a[href^="/shorts"]),
+  ytm-pivot-bar-item-renderer:has(a[href^="/shorts"]),
+  yt-tab-shape:has(a[href="/feed/shorts"])
+){display:none!important}
+:root[data-navega-livre-focus-comments="on"] :is(
+  ytd-comments,
+  ytd-watch-flexy #comments,
+  ytd-watch-flexy #chat-container,
+  ytd-live-chat-frame,
+  ytd-engagement-panel-section-list-renderer[target-id="engagement-panel-comments-section"],
+  ytm-comment-section-renderer,
+  ytm-comments-entry-point-header-renderer,
+  ytm-engagement-panel[panel-identifier="comment-item-section"]
+){display:none!important}
+:root[data-navega-livre-focus-related="on"] :is(
+  ytd-watch-flexy #related,
+  ytd-watch-next-secondary-results-renderer,
+  ytm-watch-next-secondary-results-renderer,
+  ytm-watch ytm-item-section-renderer[section-identifier="related-items"]
+){display:none!important}

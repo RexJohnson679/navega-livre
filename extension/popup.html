@@ -1,38 +1,75 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="system">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Navega Livre</title><link rel="stylesheet" href="popup.css"></head>
 <body>
-  <header><span class="logo"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3 27 7v9c0 7-11 13-11 13S5 23 5 16V7Z" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="m10 16 4 4 8-9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></span><div><h1>Navega Livre</h1><p>Menos anúncios. Mais controle.</p></div><span id="version" class="version">0.4.0</span></header>
+  <header class="app-header">
+    <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M16 3 27 7v9c0 7-11 13-11 13S5 23 5 16V7Z"/><path d="m10 16 4 4 8-9"/></svg></span>
+    <div class="brand"><h1>Navega Livre</h1><p>Seu espaço na internet.</p></div>
+    <span id="version" class="version">0.7.1</span>
+    <button id="theme" class="icon-button" title="Alternar tema" aria-label="Alternar tema"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 13.5A8.6 8.6 0 0 1 10.5 3.4 8.7 8.7 0 1 0 20.5 13.5Z"/></svg></button>
+    <button id="settings" class="icon-button" title="Abrir central de preferências" aria-label="Abrir central de preferências"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 17h16M8 4v6m8 4v6"/></svg></button>
+  </header>
   <main>
-    <section class="site-card"><div class="eyebrow">NESTE SITE</div><div class="site-line"><strong id="hostname">Carregando…</strong><span id="status" class="pill">…</span></div><label class="row"><span>Ativar proteção neste site</span><input id="siteEnabled" type="checkbox" class="switch" disabled></label></section>
-    <p id="networkState" class="engine-state" role="status">Verificando o bloqueio de rede…</p>
-    <section class="metrics" aria-label="Atividade nesta página"><div><strong id="hiddenCount">—</strong><span>elementos ocultados</span></div><div><strong id="skipCount">—</strong><span>cliques em pular</span></div></section>
+    <section class="site-card" aria-label="Proteção neste site">
+      <div class="site-top"><span class="eyebrow">NESTE SITE</span><button id="refresh" class="refresh-button" title="Atualizar os contadores desta página" aria-label="Atualizar os contadores desta página">↻</button><span id="status" class="pill">CARREGANDO</span></div>
+      <div class="site-line"><strong id="hostname">Carregando…</strong><label class="power"><span class="sr-only">Ativar proteção neste site</span><input id="siteEnabled" type="checkbox" class="switch" disabled></label></div>
+      <p id="networkState" class="engine-state" role="status">Verificando o bloqueio de rede…</p>
+    </section>
+    <section class="metrics" aria-label="Atividade nesta página">
+      <div><strong id="hiddenCount">—</strong><span>elementos ocultados</span></div>
+      <div><strong id="popupCount">—</strong><span>aberturas bloqueadas</span></div>
+      <div><strong id="skipCount">—</strong><span>ações de pular</span></div>
+    </section>
     <div class="tabs" role="tablist" aria-label="Funções da extensão">
       <button id="tab-general" role="tab" aria-controls="panel-general" aria-selected="true">Proteção</button>
       <button id="tab-youtube" role="tab" aria-controls="panel-youtube" aria-selected="false" tabindex="-1">YouTube</button>
       <button id="tab-repair" role="tab" aria-controls="panel-repair" aria-selected="false" tabindex="-1">Avisos</button>
+      <button id="tab-tools" role="tab" aria-controls="panel-tools" aria-selected="false" tabindex="-1">Ferramentas</button>
     </div>
     <section id="panel-general" class="settings" role="tabpanel" aria-labelledby="tab-general">
-      <label class="row"><span>Bloqueio geral<small>Publicidade e conexões indesejadas</small></span><input id="enabled" type="checkbox" class="switch"></label>
-      <label class="row"><span>Bloquear rastreadores<small>Lista adicional de análise e rastreamento</small></span><input id="privacy" type="checkbox" class="switch"></label>
-      <label class="row"><span>Bloquear pop-ups e abas indesejadas<small>Protege cliques e bloqueia pedidos falsos de instalação</small></span><input id="popups" type="checkbox" class="switch"></label>
-      <label class="row"><span>Ocultar espaços de anúncios<small>Desligue se um elemento do site sumir</small></span><input id="cosmetics" type="checkbox" class="switch"></label>
+      <label class="row"><span>Proteção geral<small>Publicidade e conexões indesejadas</small></span><input id="enabled" type="checkbox" class="switch"></label>
+      <label class="row"><span>Bloquear rastreadores<small>Reduzir conexões de análise e rastreamento</small></span><input id="privacy" type="checkbox" class="switch"></label>
+      <label class="row"><span>Proteger cliques e novas abas<small>Pop-ups, redirecionamentos e instalações falsas</small></span><input id="popups" type="checkbox" class="switch"></label>
+      <label class="row"><span>Ocultar espaços de anúncios<small>Desative se algum elemento do site desaparecer</small></span><input id="cosmetics" type="checkbox" class="switch"></label>
       <p id="popupState" class="engine-state" role="status">Verificando a proteção de abas…</p>
     </section>
     <section id="panel-youtube" class="settings" role="tabpanel" aria-labelledby="tab-youtube" hidden>
-      <label class="row"><span>Ajustes do YouTube<small>Filtrar dados publicitários e espaços de anúncios</small></span><input id="youtube" type="checkbox" class="switch"></label>
-      <label class="row"><span>Pular quando disponível<small>Usar o botão de pular quando ele aparecer</small></span><input id="skipAds" type="checkbox" class="switch"></label>
-      <label class="row"><span>Silenciar anúncios em vídeo<small>Restaurar o áudio depois do anúncio</small></span><input id="muteAds" type="checkbox" class="switch"></label>
+      <label class="row"><span>Ajustes de publicidade<small>Filtrar dados e espaços publicitários do YouTube</small></span><input id="youtube" type="checkbox" class="switch"></label>
+      <div class="paired">
+        <label class="row"><span>Pular quando disponível</span><input id="skipAds" type="checkbox" class="switch"></label>
+        <label class="row"><span>Silenciar anúncios</span><input id="muteAds" type="checkbox" class="switch"></label>
+      </div>
+      <div class="section-heading"><h2>Mais foco</h2><span>OPCIONAL</span></div>
+      <label class="row compact"><span>Ocultar Shorts do feed</span><input id="focusShorts" type="checkbox" class="switch"></label>
+      <label class="row compact"><span>Ocultar comentários e chat</span><input id="focusComments" type="checkbox" class="switch"></label>
+      <label class="row compact"><span>Ocultar vídeos relacionados</span><input id="focusRelated" type="checkbox" class="switch"></label>
+      <p class="hint">Foco visual em youtube.com. As mudanças são reversíveis; o acesso direto aos vídeos continua disponível.</p>
+      <p id="focusState" class="engine-state" role="status">Verificando o foco nesta aba…</p>
       <p id="youtubeState" class="engine-state player-state" role="status" hidden></p>
     </section>
     <section id="panel-repair" class="repair" role="tabpanel" aria-labelledby="tab-repair" hidden>
-      <h2>O site pede para desativar?</h2><p>Tente ocultar um aviso de bloqueador. A compatibilidade depende do site.</p>
-      <button id="repair" class="primary" disabled>Tentar liberar aviso</button>
-      <label class="row compact"><span>Repetir neste site</span><input id="autoRepair" type="checkbox" class="switch" disabled></label>
+      <span class="eyebrow">CONTINUE NAVEGANDO</span><h2>Um aviso está no caminho?</h2>
+      <p>Analise o aviso visível e tente liberar a página mantendo o bloqueador ligado.</p>
+      <button id="repair" class="primary" disabled>Tentar liberar aviso <span aria-hidden="true">↗</span></button>
+      <label class="row compact"><span>Detectar novos avisos neste site</span><input id="autoRepair" type="checkbox" class="switch" disabled></label>
+      <p class="hint">Reconhece texto e estrutura localmente. Alguns bloqueios dependem de ajustes específicos do site.</p>
     </section>
-    <p id="message" role="status" aria-live="polite">Os contadores são desta página. Recarregue após mudar o bloqueio de rede.</p>
-    <div class="actions"><button id="reload">Recarregar página</button><button id="report">Exportar diagnóstico</button></div>
+    <section id="panel-tools" class="tools" role="tabpanel" aria-labelledby="tab-tools" hidden>
+      <div class="section-heading"><h2>Compartilhe um link mais limpo</h2><span>LOCAL</span></div>
+      <p class="hint">Remova parâmetros conhecidos de rastreamento. Você revisa o resultado antes de copiar.</p>
+      <label class="field-label" for="linkInput">Link original</label>
+      <textarea id="linkInput" rows="2" maxlength="8192" placeholder="https://exemplo.com/pagina?utm_source=…" spellcheck="false"></textarea>
+      <div class="actions"><button id="useCurrentLink">Usar esta aba</button><button id="cleanLink">Limpar link</button></div>
+      <div id="linkPreview" class="link-preview" hidden>
+        <label class="field-label" for="linkOutput">Resultado</label>
+        <textarea id="linkOutput" rows="2" readonly spellcheck="false"></textarea>
+        <p id="linkState" class="hint" role="status"></p><button id="copyLink" class="primary">Copiar resultado</button>
+      </div>
+      <button id="manageSites" class="text-button">Gerenciar sites e backups <span aria-hidden="true">↗</span></button>
+    </section>
+    <p id="message" role="status" aria-live="polite">Os contadores mostram ações nesta página; não medem uma porcentagem de bloqueio.</p>
+    <div class="actions bottom-actions"><button id="reload">Recarregar página</button><button id="report">Exportar diagnóstico</button></div>
   </main>
-  <footer>Processamento local · Sem anúncios próprios<small>Alguns anúncios em vídeo podem permanecer.</small></footer>
-  <script src="filter-info.js"></script><script src="common.js"></script><script src="popup.js"></script>
+  <footer><span class="local-dot" aria-hidden="true"></span>Processamento local<span class="footer-note">Sem conta. Sem telemetria.</span></footer>
+  <script src="filter-info.js"></script><script src="common.js"></script><script src="preferences.js"></script><script src="popup.js"></script>
 </body></html>

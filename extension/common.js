@@ -46,14 +46,32 @@
     }));
   }
   function enabledRulesets(config) {
-    return config.enabled ? ['advertising', ...(config.privacy ? ['privacy'] : [])] : [];
+    return config.enabled ? ['advertising', ...(config.privacy ? ['privacy','privacyExtended'] : [])] : [];
   }
   function adblockText(text) {
     const value = String(text || '').replace(/\s+/g, ' ').slice(0, 3000);
     if (/assinatura|\bvip\b|premium|sign in|log in|faça login|faca login|subscription|subscribe|paywall/i.test(value)) return false;
     return /(?:desativ|deslig|remov|paus|disable|turn off|deactivate)[\s\S]{0,85}(?:bloqueador|ad\s*block|adblock)|(?:ad\s*block|adblock|bloqueador)[\s\S]{0,65}(?:detectado|detected|ativado|enabled)/i.test(value);
   }
-  const core = {DEFAULTS, OPTIONS, FILTER_INFO, normalizeHost, normalizeConfig, active, youtubeHost, allowRules, enabledRulesets, adblockText};
+  // The popup bridge and the content script share one isolated world per frame, so
+  // they share one lookup of the top-level hostname. A worker that is still waking
+  // up is retried instead of leaving the frame unprotected for good.
+  let frameContextPromise = null;
+  function frameContext(api, attempts = 4) {
+    if (frameContextPromise) return frameContextPromise;
+    frameContextPromise = (async () => {
+      for (let i = 0; i < attempts; i++) {
+        try {
+          const result = await api.runtime.sendMessage({type: 'FRAME_CONTEXT'});
+          if (result?.ok && result.host) return result.host;
+        } catch { /* The background worker may still be starting. */ }
+        if (i < attempts - 1) await new Promise(resolve => setTimeout(resolve, 150 * 2 ** i));
+      }
+      return '';
+    })().then(host => { if (!host) frameContextPromise = null; return host; });
+    return frameContextPromise;
+  }
+  const core = {DEFAULTS, OPTIONS, FILTER_INFO, normalizeHost, normalizeConfig, active, youtubeHost, allowRules, enabledRulesets, adblockText, frameContext};
   globalThis.NavegaCore = core;
   if (typeof module !== 'undefined' && module.exports) module.exports = core;
 })();

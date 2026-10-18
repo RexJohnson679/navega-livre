@@ -1,64 +1,96 @@
 # Navega Livre
 
-Extensão para navegadores focada em redução local de anúncios, ajustes no YouTube e reparo de avisos de adblock.
+Extensão para Chrome, Brave, Edge e Firefox com bloqueio local de anúncios, proteção de cliques, ajustes do YouTube e reparo opcional de avisos de adblock.
 
-**Versão 0.4.0 · Manifest V3 · Licença MIT**
+**Versão 0.7.1 · Manifest V3 · Código próprio MIT · Sem conta ou telemetria**
 
-## O que mudou na 0.4.0
+## Correção da 0.7.1 — Mais foco
 
-- Proteção de pop-ups no início da página: bloqueia aberturas automáticas, destinos publicitários conhecidos e uma aba extra que não corresponde ao link clicado.
-- Bloqueio de links invisíveis que cobrem a tela e de diálogos falsos exigindo instalar outro bloqueador.
-- Fechamento de abas publicitárias originadas por uma página protegida, incluindo uma aba inicialmente vazia que redireciona logo depois. Abas existentes e endereços digitados por você não são alvos desse mecanismo.
-- Filtros para slots PubADX, A-Ads, anúncios flutuantes, imagens e frames publicitários. As partes úteis da página e controles de fechar comuns são preservados.
-- Inclusão das redes observadas `pubadx.one`, `diveinthebluesky.biz`, `pa.diffgremio.com` e `acscdn.com`. O bloqueio de rede e os filtros de elementos usam o mesmo catálogo local.
-- Controle separado para pop-ups, contadores locais e pausa por site. São 3.063 domínios nas listas: 3.003 de publicidade/conexões indesejadas e 60 de rastreamento.
+As opções agora são aplicadas a abas do YouTube já abertas, inclusive antes da instalação/atualização. O controlador não depende de outro content script, reutiliza a mesma instância e usa CSS empacotado/declarativo ou scripting.insertCSS, em vez de uma tag style inline sujeita à política da página. Há suporte adicional a componentes recentes e móveis, tratamento de navegação interna e um estado de foco no painel. Falhas de aplicação são informadas; salvar uma opção não é tratado como prova de que o estilo carregou.
 
-Os ajustes do player e o reparo opcional de avisos continuam presentes. Os filtros não alteram login, assinatura ou permissões de acesso concedidas pelo servidor.
+O serviço aplica cada ação a até 64 abas de YouTube. A atualização da aba indicada tem prioridade. O arquivo CSS não é inserido de novo quando sua marca de versão já está carregada. Ao desligar ou pausar a proteção, os atributos de ativação são retirados e o conteúdo reaparece. Não há observador de DOM ou temporizador no foco.
+
+## Renovação da 0.7
+
+O bloqueador da 0.6.2 foi preservado. As regras de rede, listas, filtros cosméticos, políticas de pop-ups e motor de reparo permanecem idênticos. Nos scripts MAIN do YouTube e de pop-ups, mudou apenas a identificação da versão. Não houve nova medição de porcentagem de bloqueio nesta rodada.
+
+- **Painel novo:** quatro seções, estado da página, contadores com significado explícito, temas claro/escuro/sistema e navegação por teclado.
+- **Central de preferências:** controles gerais, pesquisa de domínios salvos, retomada de proteção e desativação do reparo por endereço exato.
+- **Limpeza de links:** ferramenta manual com prévia. Remove apenas parâmetros conhecidos de rastreamento; mantém caminho, fragmento, parâmetros funcionais e a codificação dos campos restantes. Links com parâmetros de assinatura ou credencial reconhecidos ficam intactos.
+- **Foco no YouTube:** ocultar Shorts dos feeds, comentários/chat e vídeos relacionados, independentemente. Tudo começa desligado. A folha de estilo vem no pacote; as preferências são aplicadas também às abas já abertas pela API do navegador, sem varreduras periódicas.
+- **Backup local:** exportar e importar opções, listas de sites, tema e foco. A importação valida o arquivo, mostra cada opção e exige clicar em Aplicar backup. Não importa scripts, filtros remotos ou instruções executáveis.
+- **Menos trabalho no painel:** os diagnósticos não são mais consultados a cada dois segundos. Atualizam ao abrir, navegar, mudar preferências ou clicar no botão ↻.
+
+A nova versão lê as preferências anteriores normalmente; opções de foco permanecem desligadas. Não foram acrescentadas permissões. O auxiliar privado e os relatórios enviados não integram os pacotes.
 
 ## Instalar ou atualizar
 
-Baixe o pacote do seu navegador em [Releases](https://github.com/RexJohnson679/navega-livre/releases/latest). O [histórico](CHANGELOG.md) mantém os pacotes anteriores e suas limitações.
+Os arquivos são pacotes de teste local, sem assinatura de loja. O fluxo do repositório publica o lançamento somente depois das verificações automáticas.
 
-| Pacote | Navegadores | Mínimo |
+| Pacote | Navegadores | Mínimo declarado |
 | --- | --- | --- |
-| [Chromium 0.4.0](packages/history/v0.4.0/navega-livre-chromium-v0.4.0.zip) | Chrome, Edge e Brave compatíveis com as APIs usadas | Chromium 120 |
-| [Firefox 0.4.0](packages/history/v0.4.0/navega-livre-firefox-v0.4.0.zip) | Firefox para computador | Firefox 128 |
+| [navega-livre-chromium-v0.7.1.zip](https://github.com/RexJohnson679/navega-livre/raw/refs/heads/main/packages/history/v0.7.1/navega-livre-chromium-v0.7.1.zip) | Chrome, Brave e Edge | Chromium 120 |
+| [navega-livre-firefox-v0.7.1.zip](https://github.com/RexJohnson679/navega-livre/raw/refs/heads/main/packages/history/v0.7.1/navega-livre-firefox-v0.7.1.zip) | Firefox para computador | Firefox 128 |
 
-**Chrome, Edge e Brave:** extraia o ZIP, abra a página de extensões, ative o modo de desenvolvedor e escolha “Carregar sem compactação”. Selecione a pasta `navega-livre`, onde está `manifest.json`. Para atualizar, substitua os arquivos da pasta instalada e recarregue a extensão. Não mantenha duas versões carregadas.
+**Para manter suas preferências, atualize os arquivos na pasta que já está carregada.** Guarde uma cópia da pasta anterior antes de substituí-la. Na página de extensões, recarregue a extensão e depois as páginas abertas. Mantenha uma única versão principal ativa.
 
-**Firefox:** extraia o pacote Firefox. Abra `about:debugging#/runtime/this-firefox`, escolha “Carregar extensão temporária” e selecione `manifest.json`. A instalação temporária termina ao reiniciar o navegador; distribuição permanente exige assinatura pela Mozilla.
+**Chrome, Brave e Edge:** extraia o ZIP do Chromium. Na página de extensões, ative o modo de desenvolvedor e use Carregar sem compactação para selecionar a pasta que contém manifest.json.
 
-A 0.4.0 declara `webNavigation` para identificar a origem de abas publicitárias. Confira as permissões da atualização. Feche as abas antigas dos sites e abra novas, ou recarregue-as, para carregar os scripts novos.
+**Firefox:** extraia o ZIP do Firefox e abra about:debugging#/runtime/this-firefox. Use Carregar extensão temporária e escolha manifest.json. A instalação temporária termina ao reiniciar o navegador; instalação permanente exige assinatura da Mozilla.
 
-## Controles
+## Usar
 
-- **Ativar proteção neste site:** pausa rede, anúncios visuais e pop-ups para aquele hostname, também nos iframes da página.
-- **Bloquear pop-ups e abas indesejadas:** controla a proteção de abertura de janelas, links publicitários e diálogos falsos. Desligue temporariamente se um botão legítimo de um site depender de uma abertura que foi bloqueada.
-- **Ocultar espaços de anúncios:** controla apenas os filtros visuais. Ao desligar, os elementos ocultados voltam.
-- **YouTube:** filtros de dados do player, ocultação de espaços, botão de pular quando disponível e opção de silenciar anúncios. O painel detecta abas que ainda têm o filtro antigo.
-- **Tentar liberar aviso:** ajuste opcional de avisos de bloqueador nos sites compatíveis.
+- **Proteção:** pause somente o hostname da aba pelo controle grande; o controle Proteção geral afeta todos os sites.
+- **YouTube:** preserva filtragem publicitária, pular quando disponível e silêncio opcional. Os controles Mais foco tratam apenas a apresentação da interface.
+- **Avisos:** Tentar liberar aviso analisa a mensagem e estrutura localmente, tenta fechar/ocultar e ativa acompanhamento neste domínio. Desligue Detectar novos avisos para parar e desfazer estilos/atributos quando possível.
+- **Ferramentas:** cole um link ou escolha Usar esta aba, clique em Limpar link, revise e copie. Nenhuma navegação ou requisição é feita pela limpeza. Se a cópia automática falhar, use Ctrl+C no resultado selecionado.
+- **Central:** abra pelo ícone de ajustes no cabeçalho ou Gerenciar sites e backups.
+- **Contadores:** representam ações na página, não pedidos de rede bloqueados ou porcentagem de eficácia. Clique em ↻ para consultar o estado atualizado.
 
-Nenhum bloqueador garante eliminar todos os formatos de publicidade. Scripts, domínios e layouts podem mudar; permissões, outras extensões e a versão do navegador também influenciam o resultado. O bloqueio não considera todo link externo um anúncio: links escolhidos e botões explícitos de autenticação, compartilhamento e impressão são preservados.
+Pausar a proteção em um hostname também pausa o foco nessa página do YouTube. Os seletores de foco foram validados no layout de computador; layouts móveis e mudanças futuras do YouTube podem exigir ajuste. Não remove o acesso direto a um vídeo de Shorts.
 
-## Privacidade e filtros
+## Backup e privacidade
 
-Preferências, filtros e processamento ficam no navegador. Sem telemetria, servidor próprio, anúncios próprios ou código remoto. O diagnóstico exportado pelo painel contém origem do site e contadores; não inclui caminho da página, parâmetros, cookies ou respostas do player.
+O backup contém preferências e os domínios salvos. Pode revelar seus sites escolhidos; compartilhe apenas se quiser. Não contém histórico de navegação, cookies, senhas, HTML, consultas da ferramenta de links ou contadores.
 
-Veja [PRIVACIDADE.md](extension/PRIVACIDADE.md), [origem dos filtros](extension/filters/LEIA-ME.md) e [relatório de validação](extension/RELATORIO.md). O snapshot de contribuições de StevenBlack/hosts conserva sua licença. As listas empacotadas não são a coleção completa do uBlock Origin ou EasyList.
+Arquivos de até 512 KB são aceitos, com no máximo 500 domínios por lista e opções tipadas. Formatos incompatíveis são recusados antes de salvar. A restauração do padrão pede confirmação e limpa as listas de sites. Os arquivos são portáveis entre as duas versões da extensão.
+
+A ferramenta de links mantém o texto só na memória do painel. Não o inclui no diagnóstico, backup ou armazenamento local. Não há servidor próprio, código remoto ou coleta automática.
+
+## Bloqueio e limites
+
+As listas locais preservadas incluem EasyList/EasyPrivacy, HaGeZi Light e contribuições StevenBlack. Há 10.326 regras estáticas e 103.735 domínios referenciados, incluindo contextos e exceções. Esses números não equivalem à porcentagem de anúncios bloqueados em sites reais.
+
+O reparo genérico continua opcional por domínio e orientado a mudanças da página, com os limites anteriores de processamento e referências. Preserva formulários, leitores, login, pagamento e assinatura. Pode fechar diálogos nativos e liberar seu fundo, mas não reconstrói conteúdo ausente ou negado pelo servidor. Alguns avisos exigem ajuste específico.
+
+RAM total do navegador não foi medida. O CSS cosmético e o acompanhamento publicitário do YouTube permanecem como na base, para preservar seu comportamento.
 
 ## Desenvolvimento e validação
 
-Requer Node.js 20 ou mais recente. A extensão não depende de pacotes externos em tempo de execução.
+Requer Node.js 20+. Build e testes locais não precisam de rede.
 
 ```sh
 npm test
 npm run build:chromium
 npm run build:firefox
-python3 .github/scripts/check_packages.py
+npm run verify:builds
 ```
 
-62 testes locais cobrem preferências, pausa, rede, registro de scripts, player, iframes, cosméticos, pop-ups, diálogos e diagnóstico. O fluxo do GitHub Actions exige testes com a extensão instalada em Chromium e Firefox antes de publicar um lançamento. As páginas desses testes são controladas e simulam sites de leitura, notícias e vídeo, com anúncios de redes e cliques de tipos diferentes; não são uma medição de todos os sites reais nem uma pontuação em benchmarks.
+A suíte local tem 127 testes. Foi exercitada também a interface em Firefox 153 real, com APIs WebExtension simuladas: painel, temas, links, importação com revisão, gestão de sites e foco reversível. O reparo de diálogo nativo passou novamente em DOM real.
 
-Os testes de navegador usam Playwright 1.64.0 e Selenium 4.51.0 em perfis descartáveis. Não acessam contas nem instalam a extensão no navegador de quem usa o projeto. Resultados e falhas ficam em [Actions](https://github.com/RexJohnson679/navega-livre/actions).
+Esses testes de navegador não instalam a extensão completa e não validam DNR ou comunicação entre mundos de execução. Chromium e instalação completa do Firefox não foram executados nesta rodada. Antes de uma publicação em loja, valide os pacotes instalados nos navegadores. Detalhes em [VALIDACAO.md](VALIDACAO.md).
 
-O catálogo de lançamentos em `.github/release-history.json` registra notas, commits e checksums. ZIPs antigos são preservados; a publicação da versão atual depende da validação dos arquivos e dos navegadores.
+Testes opcionais com Playwright e Firefox instalados no ambiente de QA:
+
+```sh
+node extension/tests/renewal.firefox.e2e.cjs
+node extension/tests/native-dialog.firefox.e2e.cjs
+```
+
+NAVEGA_QA_MODULES pode indicar uma pasta de módulos alternativa. NAVEGA_QA_SCREENSHOTS é opcional para inspeção local; capturas de QA não são parte dos pacotes de distribuição.
+
+## Licenças
+
+Código próprio: [MIT](LICENSE). Material EasyList/EasyPrivacy: CC BY-SA 3.0. HaGeZi Light: GPL-3.0, separado no seu ruleset. Licenças, fontes e hashes permanecem em extension/filters. Veja [privacidade](PRIVACIDADE.md), [histórico](CHANGELOG.md) e [origem dos filtros](extension/filters/LEIA-ME.md).
+
+Pacotes anteriores e lançamentos: [Releases](https://github.com/RexJohnson679/navega-livre/releases). O workflow confere os arquivos e executa testes instalados antes da publicação automática.

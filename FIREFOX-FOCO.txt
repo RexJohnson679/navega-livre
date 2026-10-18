@@ -1,0 +1,2 @@
+BASELINE_FOCUS_INLINE_CSP_REPRODUCED
+PASS_FOCUS_APPLICATION_FIREFOX {"browser":"153.0","tabs":2,"oldTabsRecovered":true,"strictStyleCsp":true,"modernAndMobile":true,"cssInsertions":2,"scope":"Actual background and focus code; browser API primitives adapted locally"}
