@@ -85,14 +85,23 @@ jobs:
         run: |
           npm run build:firefox
           npm install --prefix "$RUNNER_TEMP/navega-android" --no-audit --no-fund web-ext@10.8.0
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "emulator" "system-images;android-35;google_apis;x86_64"
           echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "emulator"
+          image_ready=false
+          for attempt in 1 2 3; do
+            if "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "system-images;android-30;google_apis;x86_64"; then
+              image_ready=true
+              break
+            fi
+            rm -rf "$ANDROID_HOME"/.temp/PackageOperation* "$ANDROID_HOME/system-images/android-30/google_apis/x86_64"
+          done
+          test "$image_ready" = true
           sudo chmod a+rw /dev/kvm
-          echo no | "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" create avd --name navega_qa --package "system-images;android-35;google_apis;x86_64" --force
+          echo no | "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" create avd --name navega_qa --package "system-images;android-30;google_apis;x86_64" --force
       - name: Iniciar Android descartável e instalar Firefox oficial
         run: |
           "$ANDROID_HOME/emulator/emulator" -avd navega_qa -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot -memory 2048 -cores 2 > "$RUNNER_TEMP/navega-emulator.log" 2>&1 &
-          adb wait-for-device
+          timeout 240 adb wait-for-device
           for attempt in $(seq 1 120); do
             if [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = 1 ]; then break; fi
             sleep 2
@@ -101,7 +110,7 @@ jobs:
           adb shell input keyevent 82
           curl --fail --location --retry 2 'https://archive.mozilla.org/pub/fenix/releases/158.0/android/fenix-158.0-android-x86_64/fenix-158.0.multi.android-x86_64.apk' --output "$RUNNER_TEMP/navega-firefox.apk"
           adb install -r "$RUNNER_TEMP/navega-firefox.apk"
-          adb shell dumpsys package org.mozilla.firefox | rg 'versionName='
+          adb shell dumpsys package org.mozilla.firefox | sed -n '/versionName=/p'
       - name: Verificar runtime em Firefox Android nativo
         env:
           NAVEGA_EXTENSION_DIR: dist/firefox
@@ -109,7 +118,9 @@ jobs:
         run: python3 extension/tests/android.e2e.py
       - name: Encerrar o emulador
         if: always()
-        run: adb emu kill || true
+        run: |
+          adb emu kill || true
+          if [ -f "$RUNNER_TEMP/navega-emulator.log" ]; then tail -60 "$RUNNER_TEMP/navega-emulator.log"; fi
   publish:
     needs: [verify, verify-android]
     permissions:
