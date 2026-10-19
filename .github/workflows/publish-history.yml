@@ -74,6 +74,9 @@ jobs:
   verify-android:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      ANDROID_USER_HOME: ${{ runner.temp }}/navega-android-home
+      ANDROID_AVD_HOME: ${{ runner.temp }}/navega-android-home/avd
     steps:
       - name: Obter o commit público exato
         run: |
@@ -97,7 +100,10 @@ jobs:
           done
           test "$image_ready" = true
           sudo chmod a+rw /dev/kvm
-          echo no | "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" create avd --name navega_qa --package "system-images;android-30;google_apis;x86_64" --force
+          mkdir -p "$ANDROID_AVD_HOME"
+          echo no | "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" create avd --name navega_qa --package "system-images;android-30;google_apis;x86_64" --path "$ANDROID_AVD_HOME/navega_qa.avd" --force
+          test -s "$ANDROID_AVD_HOME/navega_qa.ini"
+          "$ANDROID_HOME/emulator/emulator" -list-avds
       - name: Iniciar Android descartável e instalar Firefox oficial
         run: |
           "$ANDROID_HOME/emulator/emulator" -avd navega_qa -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot -memory 2048 -cores 2 > "$RUNNER_TEMP/navega-emulator.log" 2>&1 &
@@ -108,7 +114,7 @@ jobs:
           done
           test "$(adb shell getprop sys.boot_completed | tr -d '\r')" = 1
           adb shell input keyevent 82
-          curl --fail --location --retry 2 'https://archive.mozilla.org/pub/fenix/releases/158.0/android/fenix-158.0-android-x86_64/fenix-158.0.multi.android-x86_64.apk' --output "$RUNNER_TEMP/navega-firefox.apk"
+          curl --fail --location --retry 2 --connect-timeout 30 --max-time 240 'https://archive.mozilla.org/pub/fenix/releases/158.0/android/fenix-158.0-android-x86_64/fenix-158.0.multi.android-x86_64.apk' --output "$RUNNER_TEMP/navega-firefox.apk"
           adb install -r "$RUNNER_TEMP/navega-firefox.apk"
           adb shell dumpsys package org.mozilla.firefox | sed -n '/versionName=/p'
       - name: Verificar runtime em Firefox Android nativo
