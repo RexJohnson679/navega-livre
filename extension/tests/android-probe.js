@@ -2,7 +2,12 @@
 (async()=>{
   const base=__NAVEGA_ANDROID_BASE__, endpoint=__NAVEGA_ANDROID_RESULT__;
   const checks=[],tabs=[];
-  const assert=(value,label)=>{if(!value)throw Error(label);checks.push(label);};
+  console.log('NAVEGA_ANDROID_BEGIN');
+  const assert=(value,label)=>{
+    if(!value)throw Error(label);checks.push(label);
+    console.log('NAVEGA_ANDROID_CHECK',label);
+    void fetch(endpoint.replace('/result/','/progress/'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({check:label})}).catch(()=>{});
+  };
   const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
   async function until(read,label){
     const end=Date.now()+25000;let last;
@@ -51,6 +56,6 @@
     assert(await inspect(tab.id,()=>getComputedStyle(document.querySelector('#comments-mobile')).display!=='none'),'mobile focus CSS reversal');
     const runtime=await browser.runtime.getBrowserInfo();
     await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ok:true,platform,browser:runtime.version,checks,scope:'production runtime with one added test background script; local fixture; no live YouTube playback'})});
-  }catch(error){await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ok:false,error:String(error.stack||error),checks})}).catch(()=>{});}
+  }catch(error){console.error('NAVEGA_ANDROID_ERROR',String(error.stack||error));await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ok:false,error:String(error.stack||error),checks})}).catch(()=>{});}
   finally{for(const id of tabs)await browser.tabs.remove(id).catch(()=>{});}
 })();

@@ -28,6 +28,17 @@ def main():
     token = secrets.token_hex(16)
 
     class Handler(BaseHTTPRequestHandler):
+        def end_headers(self):
+            # QA status transport must work even while diagnosing host grants.
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+            self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+            super().end_headers()
+
+        def do_OPTIONS(self):
+            self.send_response(204)
+            self.end_headers()
+
         def do_GET(self):
             if self.path.startswith('/adsbygoogle.js'):
                 mime, body = 'application/javascript', 'window.fixtureAdScript=true;'
@@ -44,17 +55,21 @@ def main():
             self.wfile.write(body.encode())
 
         def do_POST(self):
-            if self.path != '/result/' + token:
+            if self.path not in ('/result/' + token, '/progress/' + token):
                 self.send_error(404)
                 return
             length = int(self.headers.get('Content-Length', '0'))
             if not 0 < length < 20000:
                 self.send_error(400)
                 return
-            result.update(json.loads(self.rfile.read(length)))
+            payload = json.loads(self.rfile.read(length))
             self.send_response(200)
             self.end_headers()
-            done.set()
+            if self.path.startswith('/result/'):
+                result.update(payload)
+                done.set()
+            else:
+                print('NATIVE_ANDROID_PROGRESS', json.dumps(payload), flush=True)
 
         def log_message(self, *args):
             pass
@@ -96,6 +111,15 @@ def main():
             saved = ET.fromstring(adb('shell', 'cat', prefs_path))
             assert any(item.get('name') == 'pref_key_remote_debugging' and
                        item.get('value') == 'true' for item in saved)
+            # Supported GeckoView automation configuration, confined to this
+            # disposable emulator. Allow this test's debugger connection, as a
+            # developer would confirm on the device. Production is untouched.
+            debug_config = temp / 'geckoview-config.yaml'
+            debug_config.write_text('prefs:\n  devtools.debugger.prompt-connection: false\n'
+                                    '  devtools.console.stdout.chrome: true\n'
+                                    '  devtools.console.stdout.content: true\n')
+            adb('push', str(debug_config), '/data/local/tmp/org.mozilla.firefox-geckoview-config.yaml')
+            adb('shell', 'am', 'set-debug-app', '--persistent', 'org.mozilla.firefox')
             source = temp / 'extension'
             shutil.copytree(BUILD, source)
             for file in BUILD.rglob('*'):
@@ -110,7 +134,7 @@ def main():
             # Fenix needs a normal tab/session for temporary extension loading.
             adb('shell', 'am', 'start', '-a', 'android.intent.action.VIEW', '-d', base+'/warmup', '-p', 'org.mozilla.firefox')
             time.sleep(2)
-            command = [os.environ['NAVEGA_WEB_EXT'], 'run', '-t', 'firefox-android', '-s', str(source), '--adb-device', 'emulator-5554', '--firefox-apk', 'org.mozilla.firefox', '--no-reload', '--no-input', '--adb-discovery-timeout', '90000']
+            command = [os.environ['NAVEGA_WEB_EXT'], 'run', '-t', 'firefox-android', '-s', str(source), '--adb-device', 'emulator-5554', '--firefox-apk', 'org.mozilla.firefox', '--no-reload', '--no-input', '--adb-discovery-timeout', '90000', '--verbose']
             with (temp / 'web-ext.log').open('w') as log:
                 process = subprocess.Popen(command, stdout=log, stderr=subprocess.STDOUT)
                 limit = time.monotonic() + 240
@@ -131,6 +155,11 @@ def main():
                 process.wait(timeout=10)
             except subprocess.TimeoutExpired:
                 process.kill()
+        try:
+            adb('shell', 'am', 'clear-debug-app', timeout=10)
+            adb('shell', 'rm', '-f', '/data/local/tmp/org.mozilla.firefox-geckoview-config.yaml', timeout=10)
+        except (subprocess.SubprocessError, OSError):
+            pass
         server.shutdown()
 
 
