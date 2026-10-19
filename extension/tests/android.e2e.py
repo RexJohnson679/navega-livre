@@ -71,7 +71,9 @@ def main():
             adb('shell', 'monkey', '-p', 'org.mozilla.firefox', '-c', 'android.intent.category.LAUNCHER', '1', stderr=subprocess.DEVNULL)
             time.sleep(3)
             adb('shell', 'am', 'force-stop', 'org.mozilla.firefox')
-            prefs_path = '/data/data/org.mozilla.firefox/shared_prefs/org.mozilla.firefox_preferences.xml'
+            # Fenix Settings.FENIX_PREFERENCES is explicitly fenix_preferences,
+            # not Android's package-named default preferences file.
+            prefs_path = '/data/data/org.mozilla.firefox/shared_prefs/fenix_preferences.xml'
             try:
                 preferences = ET.fromstring(adb('shell', 'cat', prefs_path))
             except (subprocess.CalledProcessError, ET.ParseError):
@@ -91,6 +93,9 @@ def main():
             adb('push', str(pref_file), prefs_path)
             adb('shell', 'chown', uid+':'+uid, prefs_path)
             adb('shell', 'restorecon', prefs_path)
+            saved = ET.fromstring(adb('shell', 'cat', prefs_path))
+            assert any(item.get('name') == 'pref_key_remote_debugging' and
+                       item.get('value') == 'true' for item in saved)
             source = temp / 'extension'
             shutil.copytree(BUILD, source)
             for file in BUILD.rglob('*'):
@@ -114,8 +119,8 @@ def main():
                         break
                 if not done.is_set():
                     print((temp / 'web-ext.log').read_text()[-7000:], flush=True)
-                    lines = adb('logcat', '-d', '-t', '500').splitlines()
-                    print('\n'.join(line for line in lines if any(word in line for word in ('WebExtension', 'Navega', 'Exception', 'Error', 'GeckoConsole'))) [-6000:], flush=True)
+                    lines = adb('logcat', '-d', '-t', '3000').splitlines()
+                    print('\n'.join(line for line in lines if any(word in line for word in ('WebExtension', 'Navega', 'Gecko', 'mozilla.firefox', 'AndroidRuntime'))) [-8000:], flush=True)
                     raise AssertionError('Native Android test did not report a result')
                 print('NATIVE_ANDROID_RESULT', json.dumps(result), flush=True)
                 assert result.get('ok'), result
