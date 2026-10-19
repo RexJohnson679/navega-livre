@@ -6,7 +6,6 @@
   const assert=(value,label)=>{
     if(!value)throw Error(label);checks.push(label);
     console.log('NAVEGA_ANDROID_CHECK',label);
-    void fetch(endpoint.replace('/result/','/progress/'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({check:label})}).catch(()=>{});
   };
   const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
   async function until(read,label){
@@ -17,10 +16,28 @@
   const sender={url:browser.runtime.getURL('popup.html')};
   async function request(message){const result=await handle(message,sender);if(!result.ok)throw Error(JSON.stringify(result));return result;}
   async function inspect(tabId,func,args=[]){return(await browser.scripting.executeScript({target:{tabId},func,args,world:'ISOLATED'}))[0]?.result;}
-  async function scriptLoad(tabId){return inspect(tabId,async url=>{
-    return await new Promise(resolve=>{const node=document.createElement('script');node.src=url+'?probe='+Date.now();
-      node.onload=()=>{node.remove();resolve(true);};node.onerror=()=>{node.remove();resolve(false);};document.head.appendChild(node);});
-  },[base+'/adsbygoogle.js']);}
+  async function scriptLoad(tabId){
+    const value=await inspect(tabId,async url=>{
+      return await new Promise(resolve=>{const node=document.createElement('script');node.src=url+'?probe='+Date.now();
+        const timer=setTimeout(()=>{node.remove();resolve('timeout');},10000);
+        const finish=value=>{clearTimeout(timer);node.remove();resolve(value);};
+        node.onload=()=>finish(true);node.onerror=()=>finish(false);document.head.appendChild(node);});
+    },[base+'/adsbygoogle.js']);
+    if(typeof value!=='boolean')throw Error('Script probe lost its document or timed out: '+String(value));
+    return value;
+  }
+  async function reload(tabId,state){
+    const before=await inspect(tabId,()=>performance.timeOrigin);
+    await browser.tabs.reload(tabId);
+    await until(()=>inspect(tabId,(old,expected)=>performance.timeOrigin!==old&&document.readyState==='complete'&&
+      document.documentElement.getAttribute('data-navega-livre-cosmetics')===expected,[before,state]),'new document '+state);
+  }
+  async function report(value){
+    console.log('NAVEGA_ANDROID_RESULT',JSON.stringify(value));
+    // Navigate a separate QA tab to the loopback receiver. This transport is
+    // independent of background cross-origin HTTP policies on Android.
+    await browser.tabs.create({url:endpoint+'?payload='+encodeURIComponent(JSON.stringify(value)),active:false});
+  }
   try{
     const platform=await browser.runtime.getPlatformInfo();assert(platform.os==='android','native Android platform');
     await queue;await init();await queue;
@@ -33,12 +50,10 @@
     assert(popup[0]?.result?.enabled,'native MAIN popup controller');
     assert(!(await scriptLoad(tab.id)),'native DNR blocks advertising script');
     await request({type:'SET_SITE',tabId:tab.id,enabled:false});
-    await browser.tabs.reload(tab.id);
-    await until(()=>inspect(tab.id,()=>document.readyState==='complete'&&document.documentElement.getAttribute('data-navega-livre-cosmetics')==='off'),'paused page ready');
+    await reload(tab.id,'off');
     assert(await scriptLoad(tab.id),'site pause allows the same script');
     await request({type:'SET_SITE',tabId:tab.id,enabled:true});
-    await browser.tabs.reload(tab.id);
-    await until(()=>inspect(tab.id,()=>document.readyState==='complete'&&document.documentElement.getAttribute('data-navega-livre-cosmetics')==='on'),'resumed page ready');
+    await reload(tab.id,'on');
     assert(!(await scriptLoad(tab.id)),'site resume blocks the same script');
     // A hidden document is deferred by the bounded controller. This tab is
     // active, without the action overlay, to exercise native repair directly.
@@ -55,7 +70,7 @@
     await inspect(tab.id,()=>document.documentElement.removeAttribute('data-navega-livre-focus-comments'));
     assert(await inspect(tab.id,()=>getComputedStyle(document.querySelector('#comments-mobile')).display!=='none'),'mobile focus CSS reversal');
     const runtime=await browser.runtime.getBrowserInfo();
-    await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ok:true,platform,browser:runtime.version,checks,scope:'production runtime with one added test background script; local fixture; no live YouTube playback'})});
-  }catch(error){console.error('NAVEGA_ANDROID_ERROR',String(error.stack||error));await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ok:false,error:String(error.stack||error),checks})}).catch(()=>{});}
+    await report({ok:true,platform,browser:runtime.version,checks,scope:'production runtime with one added test background script; local fixture; no live YouTube playback'});
+  }catch(error){console.error('NAVEGA_ANDROID_ERROR',String(error),String(error.stack||error));await report({ok:false,error:String(error),stack:String(error.stack||''),checks}).catch(()=>{});}
   finally{for(const id of tabs)await browser.tabs.remove(id).catch(()=>{});}
 })();

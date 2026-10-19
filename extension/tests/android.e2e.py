@@ -13,6 +13,7 @@ import subprocess
 import tempfile
 import threading
 import time
+from urllib.parse import urlsplit, parse_qs
 import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -41,6 +42,22 @@ def main():
 
         def do_GET(self):
             print('NATIVE_ANDROID_PAGE', self.path, flush=True)
+            parsed = urlsplit(self.path)
+            if parsed.path == '/result/' + token:
+                try:
+                    raw = parse_qs(parsed.query)['payload'][0]
+                    assert len(raw) < 20000
+                    payload = json.loads(raw)
+                    assert isinstance(payload, dict)
+                except (KeyError, IndexError, ValueError, AssertionError):
+                    self.send_error(400)
+                    return
+                result.update(payload)
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(b'Test result received')
+                done.set()
+                return
             if self.path.startswith('/adsbygoogle.js'):
                 mime, body = 'application/javascript', 'window.fixtureAdScript=true;'
             else:
