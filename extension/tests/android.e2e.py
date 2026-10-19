@@ -40,6 +40,7 @@ def main():
             self.end_headers()
 
         def do_GET(self):
+            print('NATIVE_ANDROID_PAGE', self.path, flush=True)
             if self.path.startswith('/adsbygoogle.js'):
                 mime, body = 'application/javascript', 'window.fixtureAdScript=true;'
             else:
@@ -138,12 +139,21 @@ def main():
             with (temp / 'web-ext.log').open('w') as log:
                 process = subprocess.Popen(command, stdout=log, stderr=subprocess.STDOUT)
                 limit = time.monotonic() + 240
+                activated = False
                 while not done.wait(1) and time.monotonic() < limit:
+                    # web-ext restarts Fenix. A pre-install warmup session may
+                    # not survive that restart, so create a normal Gecko tab
+                    # after installation, as required by the Android runner.
+                    if not activated and 'as a temporary add-on' in (temp / 'web-ext.log').read_text():
+                        adb('shell', 'am', 'start', '-a', 'android.intent.action.VIEW', '-d', base+'/activate', '-p', 'org.mozilla.firefox', timeout=20)
+                        activated = True
+                        print('NATIVE_ANDROID_ACTIVATED', flush=True)
                     if process.poll() is not None:
                         break
                 if not done.is_set():
                     print((temp / 'web-ext.log').read_text()[-7000:], flush=True)
                     lines = adb('logcat', '-d', '-t', '3000').splitlines()
+                    print('\n'.join(line for line in lines if 'NAVEGA_ANDROID' in line), flush=True)
                     print('\n'.join(line for line in lines if any(word in line for word in ('WebExtension', 'Navega', 'Gecko', 'mozilla.firefox', 'AndroidRuntime'))) [-8000:], flush=True)
                     raise AssertionError('Native Android test did not report a result')
                 print('NATIVE_ANDROID_RESULT', json.dumps(result), flush=True)
