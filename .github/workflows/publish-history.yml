@@ -74,9 +74,6 @@ jobs:
   verify-android:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    env:
-      ANDROID_USER_HOME: ${{ runner.temp }}/navega-android-home
-      ANDROID_AVD_HOME: ${{ runner.temp }}/navega-android-home/avd
     steps:
       - name: Obter o commit público exato
         run: |
@@ -84,6 +81,8 @@ jobs:
           git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
           git fetch --quiet --depth=1 origin "${GITHUB_SHA}"
           git checkout --quiet --detach FETCH_HEAD
+          echo "ANDROID_USER_HOME=$RUNNER_TEMP/navega-android-home" >> "$GITHUB_ENV"
+          echo "ANDROID_AVD_HOME=$RUNNER_TEMP/navega-android-home/avd" >> "$GITHUB_ENV"
       - name: Construir o pacote e preparar ferramentas
         run: |
           npm run build:firefox
