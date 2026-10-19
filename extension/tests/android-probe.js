@@ -16,13 +16,16 @@
   const sender={url:browser.runtime.getURL('popup.html')};
   async function request(message){const result=await handle(message,sender);if(!result.ok)throw Error(JSON.stringify(result));return result;}
   async function inspect(tabId,func,args=[]){return(await browser.scripting.executeScript({target:{tabId},func,args,world:'ISOLATED'}))[0]?.result;}
-  async function scriptLoad(tabId){
-    const value=await inspect(tabId,async url=>{
+  async function scriptLoad(tabId,path='adsbygoogle.js'){
+    // This is a page subresource test: use the page's MAIN principal/CSP, not
+    // the extension's isolated-world policy for insecure localhost requests.
+    const execution=await browser.scripting.executeScript({target:{tabId},world:'MAIN',func:async url=>{
       return await new Promise(resolve=>{const node=document.createElement('script');node.src=url+'?probe='+Date.now();
         const timer=setTimeout(()=>{node.remove();resolve('timeout');},10000);
         const finish=value=>{clearTimeout(timer);node.remove();resolve(value);};
         node.onload=()=>finish(true);node.onerror=()=>finish(false);document.head.appendChild(node);});
-    },[base+'/adsbygoogle.js']);
+    },args:[base+'/'+path]});
+    const value=execution[0]?.result;
     if(typeof value!=='boolean')throw Error('Script probe lost its document or timed out: '+String(value));
     return value;
   }
@@ -48,8 +51,12 @@
     assert(await inspect(tab.id,()=>getComputedStyle(document.querySelector('#ad')).display==='none'&&getComputedStyle(document.querySelector('#reader')).display!=='none'),'advertising hidden and article preserved');
     const popup=await browser.scripting.executeScript({target:{tabId:tab.id},world:'MAIN',func:()=>window.__navegaLivrePopupState?.()});
     assert(popup[0]?.result?.enabled,'native MAIN popup controller');
+    assert(await scriptLoad(tab.id,'control.js'),'normal same-origin script loads');
     assert(!(await scriptLoad(tab.id)),'native DNR blocks advertising script');
-    await request({type:'SET_SITE',tabId:tab.id,enabled:false});
+    const paused=await request({type:'SET_SITE',tabId:tab.id,enabled:false});
+    assert(!paused.network.error&&paused.config.disabledHosts.includes(new URL(base).hostname),'pause preference and native DNR state');
+    const allow=await browser.declarativeNetRequest.getDynamicRules();
+    assert(allow.some(rule=>rule.action.type==='allowAllRequests'&&new RegExp(rule.condition.regexFilter).test(base+'/page')),'native site allow rule installed');
     await reload(tab.id,'off');
     assert(await scriptLoad(tab.id),'site pause allows the same script');
     await request({type:'SET_SITE',tabId:tab.id,enabled:true});

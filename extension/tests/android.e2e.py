@@ -58,7 +58,7 @@ def main():
                 self.wfile.write(b'Test result received')
                 done.set()
                 return
-            if self.path.startswith('/adsbygoogle.js'):
+            if self.path.startswith('/adsbygoogle.js') or self.path.startswith('/control.js'):
                 mime, body = 'application/javascript', 'window.fixtureAdScript=true;'
             else:
                 mime = 'text/html; charset=utf-8'
